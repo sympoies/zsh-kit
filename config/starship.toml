@@ -46,7 +46,7 @@ format = "[$symbol$output ](bold #637777)"
 [custom.claude_rate_limits]
 symbol = "🌀 "
 command = "claude-prompt-segment --time-format '%m-%d %H:%M'"
-when = "false" # "command -v claude-prompt-segment >/dev/null 2>&1 && claude-prompt-segment --is-enabled"
+when = "command -v claude-prompt-segment >/dev/null 2>&1 && claude-prompt-segment --is-enabled"
 format = "[$symbol$output ](bold #c792ea)"
 
 [username]

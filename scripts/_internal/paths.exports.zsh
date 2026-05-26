@@ -40,8 +40,9 @@ typeset -a _zsh_path_prepend=()
 [[ -d /usr/local/opt/mssql-tools18/bin ]] && _zsh_path_prepend+=(/usr/local/opt/mssql-tools18/bin)
 [[ -d /home/linuxbrew/.linuxbrew/opt/mssql-tools18/bin ]] && _zsh_path_prepend+=(/home/linuxbrew/.linuxbrew/opt/mssql-tools18/bin)
 
-# nils-cli dev override (shadows brew when ~/.local/nils-cli/bin is populated)
-[[ -d "$HOME/.local/nils-cli/bin" ]] && _zsh_path_prepend+=("$HOME/.local/nils-cli/bin")
+# nils-cli dev override is applied late in `.zshrc` (after `.zprofile`
+# re-prepends /opt/homebrew/bin). Doing it here would be a no-op for
+# login shells, so keep the override centralised in `.zshrc`.
 
 # Homebrew (Apple Silicon)
 [[ -d /opt/homebrew/bin ]] && _zsh_path_prepend+=(/opt/homebrew/bin /opt/homebrew/sbin)

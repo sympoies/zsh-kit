@@ -101,3 +101,14 @@ if [[ -t 1 ]] && zsh_env::is_true "${ZSH_BOOT_FEATURES_ENABLED-}" "ZSH_BOOT_FEAT
 
   print -r -- "$msg"
 fi
+
+# ──────────────────────────────
+# nils-cli dev override (final, after all PATH mutations)
+# ──────────────────────────────
+# `.zprofile` re-prepends /opt/homebrew/bin which would demote any prepend
+# done earlier in `paths.exports.zsh`. Re-apply the override here so the
+# local dev install (`scripts/install-local-release-binaries.sh` → ~/.local/nils-cli/bin)
+# wins over the brew formula when populated. After `brew upgrade nils-cli`
+# the bump skill clears that dir, so this becomes a no-op and brew wins.
+# `typeset -U path` (set in paths.exports.zsh) dedups the earlier instance.
+[[ -d "$HOME/.local/nils-cli/bin" ]] && path=("$HOME/.local/nils-cli/bin" $path)

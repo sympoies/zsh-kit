@@ -80,6 +80,27 @@ source "$ZSH_BOOTSTRAP_SCRIPT_DIR/bootstrap.zsh"
 [[ -r "$HOME/.config/agent-memory/shell/agent-memory.zsh" ]] && \
   source "$HOME/.config/agent-memory/shell/agent-memory.zsh"
 
+# codex-workspace-launcher: defines `cws` (create/ls/exec/tunnel/rm/reset).
+[[ -r "$HOME/.config/codex-workspace-launcher/cws.zsh" ]] && \
+  source "$HOME/.config/codex-workspace-launcher/cws.zsh"
+
+# nils-cli aliases (gates on interactive + resolves Homebrew prefix).
+[[ -r "$ZSH_SCRIPT_DIR/nils-cli-aliases.zsh" ]] && \
+  source "$ZSH_SCRIPT_DIR/nils-cli-aliases.zsh"
+
+# tg-channel: scratch Claude Code session bridging Telegram channel plugin.
+# Interactive-only — runs the official telegram channel plugin in a temp
+# session id and cleans up `.claude/projects/-Users-terry/<sid>{,.jsonl}` on exit.
+alias tg-channel='(
+  set -e
+  sid=$(uuidgen | tr "A-Z" "a-z")
+  proj="$HOME/.claude/projects/-Users-terry"
+  trap "rm -rf \"$proj/$sid.jsonl\" \"$proj/$sid\"" EXIT
+  cd "$HOME"
+  DISABLE_ERROR_REPORTING=1 \
+  claude --session-id "$sid" --channels plugin:telegram@claude-plugins-official
+)'
+
 # ──────────────────────────────
 # Enabled features (always visible)
 # ──────────────────────────────

@@ -83,7 +83,16 @@ export ZSH_BOOT_FEATURES_ENABLED=true
 ```
 
 If `ZSH_BOOT_WEATHER_ENABLED=true`, the login banner is preceded by the cached weather snapshot managed by
-`bootstrap/weather.zsh` (refreshes once per hour; override via `ZSH_WEATHER_INTERVAL=<seconds>`), e.g.:
+`bootstrap/weather.zsh` (refreshes once per hour; override via `ZSH_WEATHER_INTERVAL=<seconds>`).
+
+With `weather-cli` + `ZSH_WEATHER_CITY` configured, the snapshot is a compact one-liner
+(emoji mapped from the WMO weather code; the ☔ segment is omitted at 0% rain):
+
+```text
+🌦 Taipei · Drizzle  25~35°C  ☔ 59%
+```
+
+On the wttr.in fallback (no `weather-cli` or no `ZSH_WEATHER_CITY`), the classic ASCII report shows instead:
 
 ```text
 Weather report: Taipei City, Taiwan

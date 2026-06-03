@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   `git-cli open commit` (nils-cli) instead of the retired `git-open` wrapper.
 - Login-banner weather and the `weather` helper prefer `weather-cli today --city $ZSH_WEATHER_CITY`
   (nils-cli) and fall back to wttr.in when `weather-cli` or `ZSH_WEATHER_CITY` is unavailable.
+- The weather-cli banner renders a compact one-liner via `zsh_weather::format_today_json`
+  (`🌦 Taipei · Drizzle  25~35°C  ☔ 59%`): WMO-code-mapped emoji, rounded temps, no
+  source/freshness meta, ☔ segment omitted at 0% rain; falls back to weather-cli's human
+  output when jq is unavailable.
 - `open-changed-files` is now a shell function (alias: `ocf`) in `scripts/shell-tools.zsh`
   delegating to `tools/open-changed-files.zsh` (replaces the cached wrapper binary).
 - `docs/README.md` index rewritten around the current module set; `fzf-def-docs.md` renamed its

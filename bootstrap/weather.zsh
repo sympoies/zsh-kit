@@ -53,7 +53,7 @@ zsh_weather::format_today_json() {
     *) icon='🌡'; label="${summary:-Weather}" ;;
   esac
 
-  typeset line="$icon $city · $label  ${tmin}~${tmax}°C"
+  typeset line="$icon  $city · $label  ${tmin}~${tmax}°C"
   if [[ "$rain" == <-> ]] && (( rain > 0 )); then
     line+="  ☔ ${rain}%"
   fi

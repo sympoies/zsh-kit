@@ -48,7 +48,7 @@ An example Zsh startup log with this config (`weather-cli` + `ZSH_WEATHER_CITY` 
 the wttr.in fallback prints the classic ASCII report instead):
 
 ```text
-🌦 Taipei · Drizzle  25~35°C  ☔ 59%
+🌦  Taipei · Drizzle  25~35°C  ☔ 59%
 
 📜 "Focus on how far you have come in life rather than looking at the accomplishments of others." — Lolly Daskal
 🌿  Thinking shell initialized. Expect consequences...

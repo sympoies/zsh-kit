@@ -52,11 +52,11 @@ typeset -r FIXTURE_NOT_OK='{"ok":false,"error":{"code":"NILS_WEATHER_001","messa
 # 1) Drizzle: emoji + city + label, rounded temps, rain percent shown.
 typeset line=''
 line="$(zsh_weather::format_today_json "$FIXTURE_DRIZZLE")" || fail "formatter returned non-zero for drizzle fixture"
-assert_eq '🌦 Taipei · Drizzle  25~35°C  ☔ 59%' "$line" "drizzle fixture formatting" || fail "drizzle output mismatch"
+assert_eq '🌦  Taipei · Drizzle  25~35°C  ☔ 59%' "$line" "drizzle fixture formatting" || fail "drizzle output mismatch"
 
 # 2) Clear day with 0% rain: the rain segment is omitted.
 line="$(zsh_weather::format_today_json "$FIXTURE_CLEAR_NO_RAIN")" || fail "formatter returned non-zero for clear fixture"
-assert_eq '☀️ Taipei · Clear  22~31°C' "$line" "clear fixture omits rain segment" || fail "clear output mismatch"
+assert_eq '☀️  Taipei · Clear  22~31°C' "$line" "clear fixture omits rain segment" || fail "clear output mismatch"
 
 # 3) Error envelope: non-zero return, no output.
 if line="$(zsh_weather::format_today_json "$FIXTURE_NOT_OK" 2>/dev/null)"; then

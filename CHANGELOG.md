@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - Login-banner weather and the `weather` helper prefer `weather-cli today --city $ZSH_WEATHER_CITY`
   (nils-cli) and fall back to wttr.in when `weather-cli` or `ZSH_WEATHER_CITY` is unavailable.
 - The weather-cli banner renders a compact one-liner via `zsh_weather::format_today_json`
-  (`🌦  Taipei · Drizzle  25~35°C  ☔ 59%`): WMO-code-mapped emoji, rounded temps, no
+  (`🌦  Taipei  25~35°C  ☔ 59%  Drizzle`): WMO-code-mapped emoji, rounded temps, no
   source/freshness meta, ☔ segment omitted at 0% rain; falls back to weather-cli's human
   output when jq is unavailable.
 - `open-changed-files` is now a shell function (alias: `ocf`) in `scripts/shell-tools.zsh`

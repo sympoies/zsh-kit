@@ -132,4 +132,6 @@ fi
 # wins over the brew formula when populated. After `brew upgrade nils-cli`
 # the bump skill clears that dir, so this becomes a no-op and brew wins.
 # `typeset -U path` (set in paths.exports.zsh) dedups the earlier instance.
-[[ -d "$HOME/.local/nils-cli/bin" ]] && path=("$HOME/.local/nils-cli/bin" $path)
+if [[ -d "$HOME/.local/nils-cli/bin" ]]; then
+  path=("$HOME/.local/nils-cli/bin" $path)
+fi

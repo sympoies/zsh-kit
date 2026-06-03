@@ -1,7 +1,7 @@
 # zsh_weather::format_today_json
 # Format a `weather-cli today --output json` envelope into a one-line banner.
 # Usage: zsh_weather::format_today_json <json>
-# Output: "<emoji> <city> · <condition>  <min>~<max>°C[  ☔ <pct>%]"
+# Output: "<emoji> <city>  <min>~<max>°C[  ☔ <pct>%]  <condition>"
 # Notes:
 # - Requires jq; returns non-zero when jq is missing, the envelope is not
 #   `ok`, or required fields cannot be extracted.
@@ -53,10 +53,11 @@ zsh_weather::format_today_json() {
     *) icon='🌡'; label="${summary:-Weather}" ;;
   esac
 
-  typeset line="$icon  $city · $label  ${tmin}~${tmax}°C"
+  typeset line="$icon  $city  ${tmin}~${tmax}°C"
   if [[ "$rain" == <-> ]] && (( rain > 0 )); then
     line+="  ☔ ${rain}%"
   fi
+  line+="  $label"
 
   print -r -- "$line"
   return 0

@@ -116,12 +116,10 @@ What it does:
 
 1. Ensures `scripts/_internal/paths.exports.zsh` + `scripts/_internal/paths.init.zsh` are loaded
    (with a fallback for manual sourcing).
-2. Ensures cached CLI wrappers exist and prepends `$ZSH_CACHE_DIR/wrappers/bin` to `path` so that
-   subshells can use wrapper commands without loading the whole config.
-3. Configures history behavior and a few boot flags (`ZSH_DEBUG`, `ZSH_BOOT_WEATHER_ENABLED`, `ZSH_BOOT_QUOTE_ENABLED`).
-4. Optionally shows the login banner (weather + quote).
-5. Sources `bootstrap/bootstrap.zsh`, which loads the rest of the repo modules under `scripts/`.
-6. Optionally prints the enabled feature list when `ZSH_BOOT_FEATURES_ENABLED=true` (default: false).
+2. Configures history behavior and a few boot flags (`ZSH_DEBUG`, `ZSH_BOOT_WEATHER_ENABLED`, `ZSH_BOOT_QUOTE_ENABLED`).
+3. Optionally shows the login banner (weather + quote).
+4. Sources `bootstrap/bootstrap.zsh`, which loads the rest of the repo modules under `scripts/`.
+5. Optionally prints the enabled feature list when `ZSH_BOOT_FEATURES_ENABLED=true` (default: false).
 
 ---
 

@@ -11,19 +11,12 @@ This tool is intended to be used after an LLM edits files, so you can immediatel
 - Open git changes: `open-changed-files --git`
 - Preview commands: `open-changed-files --dry-run ...`
 
-## Wrapper
+## Entrypoint
 
-zsh-kit ships a cached wrapper named `open-changed-files` (on `PATH`) that behaves like
-`./tools/open-changed-files.zsh`.
+zsh-kit ships an `open-changed-files` shell function (alias: `ocf`) in `scripts/shell-tools.zsh`
+that delegates to `./tools/open-changed-files.zsh`.
 
-Wrapper config (for reference):
-
-```zsh
-_wrappers::write_exec_wrapper open-changed-files \
-  tools/open-changed-files.zsh
-```
-
-If the wrapper isn't available in your environment, call the script directly via
+Outside an interactive zsh-kit shell (scripts, subshells), call the script directly via
 `./tools/open-changed-files.zsh ...`.
 
 ## Behavior

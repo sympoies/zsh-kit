@@ -13,7 +13,6 @@ Files:
 
 - `scripts/_internal/paths.exports.zsh` (exports only)
 - `scripts/_internal/paths.init.zsh` (minimal init: ensure cache dir exists)
-- `scripts/_internal/paths.zsh` (compat wrapper: exports + init)
 
 Purpose:
 
@@ -26,39 +25,7 @@ Notes:
 
 - This module is intentionally under `_internal/` so it is **not auto-loaded** by the bootstrap
   script group loader; callers opt-in via `source`.
-- `paths.zsh` remains as a convenience wrapper for scripts that want both exports + init.
 
-## wrappers
-
-File: `scripts/_internal/wrappers.zsh`
-
-Purpose:
-
-- Provide a small generator that creates **executable CLI wrappers** in the cache directory.
-- This is needed for subprocess contexts like `fzf --preview`, where zsh functions/aliases from the
-  parent shell are not available.
-
-Output location:
-
-- `${ZSH_CACHE_DIR:-$ZDOTDIR/cache}/wrappers/bin`
-
-Generated commands:
-
-- `open-changed-files`
-- `git-open`
-- `git-lock`
-- `git-tools`
-- `git-summary`
-- (feature: `codex`) `codex-starship` (only when `ZSH_FEATURES` includes `codex`)
-- (feature: `opencode`) `opencode-tools` (only when `ZSH_FEATURES` includes `opencode`)
-
-How it is used:
-
-- Interactive shells: `.zshrc` ensures wrappers exist (idempotent) and prepends the wrappers bin dir to `PATH`.
-
-Notes:
-
-- The wrappers are generated under `cache/` and should remain gitignored (they are runtime artifacts).
-- Wrappers are bundled into **single-file** executables via `tools/bundle-wrapper.zsh`.
-- `bundle-wrapper.zsh` supports `typeset -a exec_sources=(...)` to embed runtime-executed `tools/*` scripts into the wrapper.
-- Bundled wrappers include `bootstrap/00-preload.zsh` so helpers like `set_clipboard` are available.
+> The cached CLI wrapper generator (`wrappers.zsh` + `tools/bundle-wrapper.zsh`) was removed:
+> the legacy CLI tools it bundled now ship as native `nils-cli` binaries, and
+> `open-changed-files` is provided as a shell function in `scripts/shell-tools.zsh`.

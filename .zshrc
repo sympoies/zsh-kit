@@ -19,21 +19,6 @@ fi
 [[ -r "$paths_init" ]] && source "$paths_init"
 
 # ──────────────────────────────
-# Cached CLI wrappers (for subshells like fzf preview)
-# ──────────────────────────────
-typeset wrappers_zsh="$ZSH_SCRIPT_DIR/_internal/wrappers.zsh"
-typeset wrappers_bin="$ZSH_CACHE_DIR/wrappers/bin"
-
-if [[ -f "$wrappers_zsh" ]]; then
-  source "$wrappers_zsh"
-  [[ -o interactive ]] && _wrappers::ensure_all || _wrappers::ensure_all >/dev/null 2>&1 || true
-fi
-
-if [[ -d "$wrappers_bin" ]] && (( ${path[(Ie)$wrappers_bin]} == 0 )); then
-  path=("$wrappers_bin" $path)
-fi
-
-# ──────────────────────────────
 # History
 # ──────────────────────────────
 # macOS ships `/etc/zshrc`, which sets `HISTFILE=${ZDOTDIR:-$HOME}/.zsh_history`.

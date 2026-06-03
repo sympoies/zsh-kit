@@ -10,6 +10,7 @@ if command -v safe_unalias >/dev/null; then
     histflush history-flush \
     edit-zsh y \
     cheat weather \
+    open-changed-files ocf \
     bff his
 fi
 
@@ -273,6 +274,28 @@ edit-zsh() {
   builtin cd -- "$cwd" >/dev/null
 }
 
+# open-changed-files
+# Open changed files in VS Code (delegates to tools/open-changed-files.zsh).
+# Usage: open-changed-files [--git] [--dry-run] [files...]
+# Notes:
+# - Replaces the retired cached CLI wrapper; same tool, function entrypoint.
+open-changed-files() {
+  emulate -L zsh
+  setopt err_return
+
+  typeset tool="${ZSH_TOOLS_DIR:-${ZDOTDIR:-$HOME/.config/zsh}/tools}/open-changed-files.zsh"
+  if [[ ! -r "$tool" ]]; then
+    print -u2 -r -- "❌ open-changed-files tool not found: $tool"
+    return 127
+  fi
+
+  zsh -f -- "$tool" "$@"
+}
+
+# ocf: Alias of open-changed-files.
+# Usage: ocf [--git] [--dry-run] [files...]
+alias ocf='open-changed-files'
+
 # y [dir] [yazi args...]
 # Launch yazi and change to the last visited directory on exit.
 # Usage: y [dir] [yazi args...]
@@ -337,13 +360,22 @@ cheat() {
 }
 
 # weather [location]
-# Print weather information from wttr.in.
+# Print weather information (prefers `weather-cli`; falls back to wttr.in).
 # Usage: weather [location]
+# Env:
+# - ZSH_WEATHER_CITY: default city for `weather-cli` when no location is given.
 # Notes:
 # - Requires network access.
+# - `weather-cli` needs a city (argument or ZSH_WEATHER_CITY); otherwise wttr.in is used.
 weather() {
   emulate -L zsh
   setopt err_return
+
+  typeset city="${*:-${ZSH_WEATHER_CITY-}}"
+  if command -v weather-cli >/dev/null 2>&1 && [[ -n "$city" ]]; then
+    weather-cli today --city "$city"
+    return $?
+  fi
 
   if ! command -v curl >/dev/null 2>&1; then
     print -u2 -r -- "❌ curl not found"

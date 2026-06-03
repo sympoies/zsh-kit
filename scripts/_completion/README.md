@@ -15,7 +15,7 @@ This document explains how to write and maintain completion scripts in
 
 ## File Naming and Entry Points
 
-- File name: `_tool-name` (e.g., `_git-tools`).
+- File name: `_tool-name` (e.g., `_docker-tools`).
 - First line: `#compdef tool-name`.
 - Define a function named `_tool-name` and bind with `compdef`.
 
@@ -137,7 +137,7 @@ Notes:
 
 ## Common Pitfall: nested subcommands need `compset` (wrappers like `tool group cmd`)
 
-If your tool is a wrapper with *nested* subcommands (e.g. `git-tools commit context`), it’s common to:
+If your tool is a wrapper with *nested* subcommands (e.g. `docker-tools container sh`), it’s common to:
 
 1. Use an outer `_arguments -C` to parse `group` and `cmd`.
 2. Call another `_arguments` in the `args` state to complete flags for the chosen `cmd`.

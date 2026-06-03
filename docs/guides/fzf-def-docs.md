@@ -1,12 +1,12 @@
 # fzf-def Docblock Guidelines (Functions / Aliases)
 
 This document defines how to write docblocks (comment blocks directly above function / alias
-definitions) so that `fzf-tools def` / `fzf-tools function` / `fzf-tools alias` can show useful,
+definitions) so that `fzf-cli def` / `fzf-cli function` / `fzf-cli alias` can show useful,
 copy-friendly help in previews.
 
 ## Background & Goals
 
-- `fzf-tools` renders “docblock above a definition + the actual definition”.
+- `fzf-cli` renders “docblock above a definition + the actual definition”.
 - Docblocks therefore become a searchable, copyable, in-context mini-doc.
 - The goal is to keep “what I need at the moment of use” close to the definition:
   - What is it? (intent / scope)
@@ -21,7 +21,7 @@ Non-goals:
 
 ## Docblock Capture Rules (Must Read)
 
-`fzf-tools` extracts docblocks using the following rules:
+`fzf-cli` extracts docblocks using the following rules:
 
 - It only captures consecutive `# ...` lines that are immediately above a function/alias definition.
 - There must be **no blank line** between the docblock and the definition, otherwise the docblock is
@@ -47,7 +47,7 @@ Characteristics (any of the following):
 
 - Expected to be executed directly by a human in the shell (not only called by other functions).
 - Documented in `README.md` or `docs/*.md` as a command/tool.
-- Uses readable kebab-case (e.g. `git-scope`, `fzf-tools`, `kill-port`).
+- Uses readable kebab-case (e.g. `git-scope`, `fzf-cli`, `kill-port`).
 
 Minimum: L2 (Summary + Usage)  
 Recommended: for destructive/high-risk commands, use L3 (add Examples/Notes/Safety/Env).
@@ -56,7 +56,7 @@ Recommended: for destructive/high-risk commands, use L3 (add Examples/Notes/Safe
 
 Characteristics:
 
-- Has subcommands (`<command> ...`), or is a command-collection entrypoint like `fzf-tools`.
+- Has subcommands (`<command> ...`), or is a command-collection entrypoint like `fzf-cli`.
 
 Minimum: L3 (must list subcommands + common examples).
 
@@ -122,9 +122,9 @@ To keep previews consistent and easy to scan, standardize the *shape* of docbloc
 
 Then add `Usage:` and optional sections (`Examples:`, `Notes:`, `Env:`, `Safety:`) as needed.
 
-## Preview Separators (fzf-tools)
+## Preview Separators (fzf-cli)
 
-For readability, `fzf-tools def` / `fzf-tools function` / `fzf-tools alias` wraps captured docblocks
+For readability, `fzf-cli def` / `fzf-cli function` / `fzf-cli alias` wraps captured docblocks
 with comment separator lines in the preview output (and therefore in the copied result).
 
 - These separator lines are inserted at render time and are not part of the source docblock.
@@ -243,7 +243,7 @@ CI (GitHub Actions):
 
 Manual spot-check (preview quality):
 
-- `fzf-tools def` for representative commands, dispatchers, and high-risk aliases/functions
+- `fzf-cli def` for representative commands, dispatchers, and high-risk aliases/functions
 
 ## Appendix: Existing Styles & Convergence
 

@@ -9,9 +9,9 @@ with emoji-powered UX and built-in Git tools.
 
 - 🌟 [Login banner](docs/guides/login-banner.md): Emoji-powered shell intro with rotating quotes
 - 🧩 [Plugin System](docs/guides/plugin-system.md): Git-powered declarative loader with auto-clone and update support
-- ⏳ [Progress bar utilities](docs/guides/progress-bar.md): TTY-friendly progress output for long-running commands
 - 🚀 [Starship](https://starship.rs): Customized prompt with language & context awareness
 - 🧭 [Zoxide](https://github.com/ajeetdsouza/zoxide): Smart directory jumping, aliased as `z`
+- 🛠 [nils-cli](https://github.com/sympoies/nils-cli) integration: native `fzf-cli` / `git-cli` workflows wired into hotkeys and aliases
 - 🔧 Modular and lazy-friendly structure under `scripts/`
 - 🧹 Centralized `cache/` and `.private/` folders for clean separation of history, state, and secrets
 
@@ -31,8 +31,8 @@ with emoji-powered UX and built-in Git tools.
 ├── scripts/           # Modular Zsh behavior scripts
 │   ├── _completion/   # Custom completions for CLI tools or aliases
 │   ├── _features/     # Optional feature modules (opt-in via `ZSH_FEATURES`)
-│   ├── _internal/     # Internal modules (not auto-loaded; paths, wrapper generator, etc.)
-│   ├── git/           # Git workflow tools and custom logic
+│   ├── _internal/     # Internal modules (not auto-loaded; paths, features helpers)
+│   ├── git/           # Git workflow aliases (compound flows via nils-cli `git-cli`)
 │   └── interactive/   # Interactive shell scripts (completion, plugin hooks, etc.)
 ├── tests/             # Zsh test scripts (audit, regression, etc.)
 ├── tools/             # Standalone executable scripts or compiled helpers
@@ -41,8 +41,8 @@ with emoji-powered UX and built-in Git tools.
 
 ## 🪄 Startup Snapshot
 
-> Login messages include randomly selected inspirational quotes and an optional cached wttr.in weather snapshot,
-> stored in local files that grow over time.
+> Login messages include randomly selected inspirational quotes and an optional cached weather snapshot
+> (`weather-cli` when configured, wttr.in fallback), stored in local files that grow over time.
 
 An example Zsh startup log with this config:
 
@@ -111,7 +111,7 @@ fi
 
 ### Optional Features (`ZSH_FEATURES`)
 
-Some modules are disabled by default (not sourced; no wrappers generated).
+Some modules are disabled by default (not sourced).
 Enable them by setting `ZSH_FEATURES` in your **home** `~/.zshenv` **before** sourcing this repo:
 
 ```bash

@@ -9,7 +9,8 @@ and a bit of mechanical sarcasm into each terminal startup — built entirely fr
 
 - 📜 Displays a **random inspirational quote** at login
 - 🧠 Shows a **dynamic emoji preamble** with a boot message (because shells deserve ceremony)
-- 🌦 (Optional) Prints a cached wttr.in weather snapshot (`bootstrap/weather.zsh`, 1-hour TTL) when `ZSH_BOOT_WEATHER_ENABLED=true`
+- 🌦 (Optional) Prints a cached weather snapshot (`bootstrap/weather.zsh`, 1-hour TTL) when `ZSH_BOOT_WEATHER_ENABLED=true`;
+  prefers `weather-cli today --city $ZSH_WEATHER_CITY` (nils-cli) and falls back to wttr.in
 - 🌐 Fetches fresh quotes from a public API (`zenquotes.io`) in the background
 - 🗂 Stores up to 100 recent quotes locally in a text file for offline fallback
 - 🔒 Prevents duplicate execution when sourced multiple times
@@ -43,8 +44,8 @@ On every interactive login, the script:
 $ZDOTDIR/assets/quotes.txt             # Stored quotes file (text, one per line)
 $ZSH_CACHE_DIR/quotes.timestamp        # Last time quote was fetched (unix timestamp)
 $ZSH_TOOLS_DIR/random_emoji_cmd.zsh    # Emoji selector script (returns one emoji per call)
-$ZDOTDIR/bootstrap/weather.zsh          # Weather helper (sources wttr.in cache logic)
-$ZSH_CACHE_DIR/weather.txt             # Cached wttr.in output
+$ZDOTDIR/bootstrap/weather.zsh          # Weather helper (weather-cli / wttr.in cache logic)
+$ZSH_CACHE_DIR/weather.txt             # Cached weather output (weather-cli or wttr.in)
 $ZSH_CACHE_DIR/weather.timestamp       # Last time weather was fetched
 ```
 
@@ -60,7 +61,8 @@ Want to adjust the mood?
 
 Need a silent login? Wrap `login.zsh` in a toggle and only load when `$SHOW_LOGIN_BANNER=true`.
 
-Need weather tweaks? Set `ZSH_WEATHER_URL='https://wttr.in/Taipei?0'` or `ZSH_WEATHER_INTERVAL=900` ahead of
+Need weather tweaks? Set `ZSH_WEATHER_CITY=Taipei` (enables the `weather-cli` source),
+`ZSH_WEATHER_URL='https://wttr.in/Taipei?0'` (wttr.in fallback), or `ZSH_WEATHER_INTERVAL=900` ahead of
 sourcing `.zshrc` to change location/refresh cadence.
 
 ---
@@ -80,7 +82,7 @@ If you want a one-line enabled feature summary on each startup, set:
 export ZSH_BOOT_FEATURES_ENABLED=true
 ```
 
-If `ZSH_BOOT_WEATHER_ENABLED=true`, the login banner is preceded by the cached wttr.in snapshot managed by
+If `ZSH_BOOT_WEATHER_ENABLED=true`, the login banner is preceded by the cached weather snapshot managed by
 `bootstrap/weather.zsh` (refreshes once per hour; override via `ZSH_WEATHER_INTERVAL=<seconds>`), e.g.:
 
 ```text

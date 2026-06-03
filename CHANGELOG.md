@@ -3,6 +3,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.2.0 - 2026-06-03
+
+### Changed
+
+- `git-magic` / `git` open-variant aliases (`gpo`, `gcpo`, `gcapo`, ...) now call the native
+  `git-cli open commit` (nils-cli) instead of the retired `git-open` wrapper.
+- Login-banner weather and the `weather` helper prefer `weather-cli today --city $ZSH_WEATHER_CITY`
+  (nils-cli) and fall back to wttr.in when `weather-cli` or `ZSH_WEATHER_CITY` is unavailable.
+- `open-changed-files` is now a shell function (alias: `ocf`) in `scripts/shell-tools.zsh`
+  delegating to `tools/open-changed-files.zsh` (replaces the cached wrapper binary).
+- `docs/README.md` index rewritten around the current module set; `fzf-def-docs.md` renamed its
+  subject from `fzf-tools` to `fzf-cli`.
+
+### Removed
+
+- Dead utility chain with no remaining consumers: `scripts/progress-bar.zsh`,
+  `scripts/async-pool.zsh`, `scripts/ansi-utils.zsh` (plus `00-preload.zsh` shims, tests, and the
+  progress-bar guide).
+- `scripts/chrome-devtools-rdp.zsh` (unused Chrome remote-debugging helpers).
+- The cached CLI wrapper/bundler system: `scripts/_internal/wrappers.zsh`,
+  `wrappers.bundle-prelude.zsh`, `tools/bundle-wrapper.zsh`, the `.zshrc` wrapper PATH block, and
+  the stale `cache/wrappers/bin` runtime artifacts it left behind.
+- The unused `scripts/_internal/paths.zsh` compat wrapper.
+- Stale references from the previous archive pass: the `git/git-tools.zsh` bootstrap entry, the
+  dead `git-open` fzf-tab zstyle block in `completion.zsh`, duplicated legacy CLI docs under
+  `docs/cli/` (already preserved in `archive/legacy-zsh-cli-tools/`), and orphan screenshots
+  (moved next to the archived docs).
+
 ## v2.1.4 - 2026-02-04
 
 ### Changed

@@ -30,7 +30,23 @@ fi
 
 if (( fetch_needed )); then
   typeset weather_output=''
-  if weather_output=$(curl -fsS --max-time 4 "$WEATHER_URL"); then
+  typeset -i weather_fetched=0
+
+  # Prefer the native weather-cli (nils-cli) when available and a city is configured;
+  # otherwise fall back to wttr.in (IP-based location, zero config).
+  if command -v weather-cli >/dev/null 2>&1 && [[ -n "${ZSH_WEATHER_CITY-}" ]]; then
+    if weather_output=$(weather-cli today --city "$ZSH_WEATHER_CITY" 2>/dev/null); then
+      weather_fetched=1
+    fi
+  fi
+
+  if (( ! weather_fetched )); then
+    if weather_output=$(curl -fsS --max-time 4 "$WEATHER_URL"); then
+      weather_fetched=1
+    fi
+  fi
+
+  if (( weather_fetched )); then
     typeset tmp_file="${WEATHER_CACHE_FILE}.tmp.$$"
     printf "%s\n" "$weather_output" >| "$tmp_file"
     mv -f "$tmp_file" "$WEATHER_CACHE_FILE"

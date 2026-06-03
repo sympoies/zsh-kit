@@ -44,17 +44,12 @@ with emoji-powered UX and built-in Git tools.
 > Login messages include randomly selected inspirational quotes and an optional cached weather snapshot
 > (`weather-cli` when configured, wttr.in fallback), stored in local files that grow over time.
 
-An example Zsh startup log with this config:
+An example Zsh startup log with this config (`weather-cli` + `ZSH_WEATHER_CITY` configured;
+the wttr.in fallback prints the classic ASCII report instead):
 
 ```text
-Weather report: Taipei City, Taiwan
+🌦 Taipei · Drizzle  25~35°C  ☔ 59%
 
-       .-.      Light drizzle
-      (   ).    +13(12) °C
-     (___(__)   ↙ 13 km/h
-      ‘ ‘ ‘ ‘   10 km
-     ‘ ‘ ‘ ‘    0.7 mm
-                
 📜 "Focus on how far you have come in life rather than looking at the accomplishments of others." — Lolly Daskal
 🌿  Thinking shell initialized. Expect consequences...
 

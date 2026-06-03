@@ -89,7 +89,7 @@ With `weather-cli` + `ZSH_WEATHER_CITY` configured, the snapshot is a compact on
 (emoji mapped from the WMO weather code; the ☔ segment is omitted at 0% rain):
 
 ```text
-🌦 Taipei · Drizzle  25~35°C  ☔ 59%
+🌦  Taipei · Drizzle  25~35°C  ☔ 59%
 ```
 
 On the wttr.in fallback (no `weather-cli` or no `ZSH_WEATHER_CITY`), the classic ASCII report shows instead:

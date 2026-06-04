@@ -19,19 +19,21 @@
 #   config/tools.optional.linux.list (with --all, if present)
 #
 # Usage:
-#   ./install-tools.zsh [--dry-run] [--quiet] [--all]
+#   ./install-tools.zsh [--dry-run] [--quiet] [--all] [--yes] [--update-brew]
 #
 # Examples:
 #   ./install-tools.zsh            # Install missing tools via Homebrew
 #   ./install-tools.zsh --dry-run  # Preview what would be installed
 #   ./install-tools.zsh --all      # Install required + optional
+#   ./install-tools.zsh --yes      # Install missing tools without prompting
 #
-# Tools will only be installed if not already present on your system.
+# Tools will only be installed if not already present on your system. Existing
+# commands from other package managers are left alone.
 
 typeset -gr SCRIPT_PATH="${0:A}"
 typeset -gr REPO_ROOT="${SCRIPT_PATH:h}"
 export ZDOTDIR="$REPO_ROOT"
-typeset -gr GRAYSURF_HOMEBREW_TAP_NAME="graysurf/tap"
+typeset -gr SYMPOIES_HOMEBREW_TAP_NAME="sympoies/tap"
 typeset -gr DAIPEIHUST_HOMEBREW_TAP_NAME="daipeihust/tap"
 
 typeset -gr PATHS_FILE="$ZDOTDIR/scripts/_internal/paths.exports.zsh"
@@ -84,15 +86,18 @@ function _install_tools::apply_homebrew_env() {
   return 0
 }
 
-function _install_tools::tap_graysurf_homebrew_tap() {
+function _install_tools::tap_homebrew_taps() {
   emulate -L zsh
   setopt errexit nounset pipefail
 
   local quiet="$1"
+  local include_optional="$2"
   local -a tap_names=(
-    "$GRAYSURF_HOMEBREW_TAP_NAME"
-    "$DAIPEIHUST_HOMEBREW_TAP_NAME"
+    "$SYMPOIES_HOMEBREW_TAP_NAME"
   )
+  if [[ "$include_optional" == true ]]; then
+    tap_names+=("$DAIPEIHUST_HOMEBREW_TAP_NAME")
+  fi
 
   local home="${HOME-}"
   local -a candidates=(
@@ -117,7 +122,7 @@ function _install_tools::tap_graysurf_homebrew_tap() {
   done
 
   if (( ${#brew_paths[@]} == 0 )); then
-    print -u2 -r -- "warn: brew not found; skipping tap ${tap_name}"
+    print -u2 -r -- "warn: brew not found; skipping Homebrew taps"
     return 0
   fi
 
@@ -212,7 +217,7 @@ function _install_tools::ensure_homebrew() {
   return 1
 }
 
-function _install_tools::brew_update_upgrade() {
+function _install_tools::brew_update() {
   emulate -L zsh
   setopt errexit nounset pipefail
 
@@ -220,12 +225,10 @@ function _install_tools::brew_update_upgrade() {
 
   if [[ "$quiet" == true ]]; then
     brew update >/dev/null 2>&1
-    brew upgrade >/dev/null 2>&1
     return 0
   fi
 
   brew update
-  brew upgrade
 }
 
 function _install_tools::ensure_coreutils() {
@@ -258,6 +261,8 @@ function _install_tools::main() {
 
   local dry_run=false
   local quiet=false
+  local include_optional=false
+  local update_brew=false
 
   local arg=''
   for arg in "$@"; do
@@ -269,14 +274,22 @@ function _install_tools::main() {
         quiet=true
         ;;
       --all)
+        include_optional=true
+        ;;
+      --yes)
+        ;;
+      --update-brew)
+        update_brew=true
         ;;
     esac
   done
 
   if [[ "$dry_run" != true ]]; then
     _install_tools::ensure_homebrew "$quiet"
-    _install_tools::tap_graysurf_homebrew_tap "$quiet"
-    _install_tools::brew_update_upgrade "$quiet"
+    _install_tools::tap_homebrew_taps "$quiet" "$include_optional"
+    if [[ "$update_brew" == true ]]; then
+      _install_tools::brew_update "$quiet"
+    fi
     _install_tools::ensure_coreutils "$quiet"
   fi
 

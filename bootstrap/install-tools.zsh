@@ -3,7 +3,7 @@
 # install-tools.zsh — Install required CLI tools via Homebrew (macOS/Linux)
 #
 # Usage:
-#   ./install-tools.zsh [--dry-run] [--quiet] [--all]
+#   ./install-tools.zsh [--dry-run] [--quiet] [--all] [--yes] [--update-brew]
 #
 # Options:
 #   --dry-run   Simulate the installation process without installing anything.
@@ -13,6 +13,11 @@
 #               Only summary messages will be shown.
 #
 #   --all       Install both required and optional tools (tools.list + tools.optional.list).
+#
+#   --yes       Install missing tools without prompting.
+#
+#   --update-brew
+#               Accepted by the user-facing wrapper; no-op here.
 #
 # Description:
 #   This script checks for required CLI tools defined in $ZSH_CONFIG_DIR/tools.list.
@@ -30,7 +35,7 @@
 #   - This script installs tools via Homebrew only. If you maintain apt-only lists
 #     (e.g. tools.*.linux.apt.list), install them separately.
 #
-#   It prompts for confirmation before proceeding, unless --dry-run is used.
+#   It prompts for confirmation before proceeding, unless --dry-run or --yes is used.
 #
 #   Homebrew runs on both macOS and Linux; if brew is missing, run ./install-tools.zsh to bootstrap it.
 #
@@ -65,6 +70,7 @@ TOOLS_OPTIONAL_LINUX_LIST="$ZSH_CONFIG_DIR/tools.optional.linux.list"
 ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED="${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-false}"
 ZSH_INSTALL_TOOLS_QUIET_ENABLED="${ZSH_INSTALL_TOOLS_QUIET_ENABLED-false}"
 ZSH_INSTALL_TOOLS_INCLUDE_OPTIONAL_ENABLED="${ZSH_INSTALL_TOOLS_INCLUDE_OPTIONAL_ENABLED-false}"
+ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED="${ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED-false}"
 
 # _install_tools::parse_tools_list_line <line>
 # Parse one tools.list line into $reply as: (<tool> <brew_name> <comment>).
@@ -166,6 +172,11 @@ for arg in "$@"; do
     --all)
       ZSH_INSTALL_TOOLS_INCLUDE_OPTIONAL_ENABLED=true
       ;;
+    --yes)
+      ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED=true
+      ;;
+    --update-brew)
+      ;;
     *)
       printf "❌ Unknown option: %s\n" "$arg"
       printf "Usage: %s [--dry-run] [--quiet] [--all]\n" "$0"
@@ -223,6 +234,9 @@ fi
 if zsh_env::is_true "${ZSH_INSTALL_TOOLS_INCLUDE_OPTIONAL_ENABLED-}" "ZSH_INSTALL_TOOLS_INCLUDE_OPTIONAL_ENABLED"; then
   printf "🧩 ALL mode enabled — including optional tools\n"
 fi
+if zsh_env::is_true "${ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED-}" "ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED"; then
+  printf "✅ YES mode enabled — installing missing tools without prompting\n"
+fi
 
 if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED"; then
   if ! _install_tools::ensure_homebrew_on_path; then
@@ -257,9 +271,17 @@ if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS
     done
     printf "\n"
     printf "🛠  You can run this script with --dry-run to preview without installing.\n"
-    printf "❓ Proceed with installation? [y/N]: "
-    read -r confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    if zsh_env::is_true "${ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED-}" "ZSH_INSTALL_TOOLS_ASSUME_YES_ENABLED"; then
+      printf "➡️  Proceeding because --yes was supplied.\n"
+    elif [[ -t 0 ]]; then
+      printf "❓ Proceed with installation? [y/N]: "
+      read -r confirm
+      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        printf "❌ Aborted by user.\n"
+        exit 1
+      fi
+    else
+      printf "❌ Missing tools require confirmation. Re-run with --yes to install non-interactively.\n"
       printf "❌ Aborted by user.\n"
       exit 1
     fi
@@ -327,3 +349,9 @@ printf "🧾 Install Summary:\n"
 printf "   ✅ Installed: %d\n" "$installed"
 printf "   ⏭ Skipped:   %d\n" "$skipped"
 printf "   ❌ Failed:    %d\n" "$failed"
+
+if (( failed > 0 )); then
+  printf "\n"
+  printf "❌ One or more tools failed to install.\n"
+  exit 1
+fi

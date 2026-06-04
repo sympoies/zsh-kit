@@ -88,6 +88,67 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
   assert_eq 0 "$rc" "smoke hook should pass" || fail "$output"
   assert_contains "$output" "running smoke validation" "smoke output" || fail "$output"
 
+  if command -v zsh-kit >/dev/null 2>&1; then
+    typeset cli_home="$tmp_dir/cli-home"
+    typeset cli_dest="$tmp_dir/cli-dest"
+    mkdir -p -- "$cli_home"
+
+    output="$(
+      env -u ZDOTDIR -u ZSH_CONFIG_DIR -u ZSH_BOOTSTRAP_SCRIPT_DIR -u ZSH_SCRIPT_DIR \
+        -u ZSH_TOOLS_DIR -u ZSH_CACHE_DIR -u ZSH_COMPDUMP \
+        HOME="$cli_home" \
+        zsh-kit setup \
+          --repo "$REPO_ROOT" \
+          --dest "$cli_dest" \
+          --write-zshenv \
+          --features docker,opencode \
+          --install-tools skip \
+          --apply \
+          --format json \
+          2>&1
+    )"
+    rc=$?
+    assert_eq 0 "$rc" "fresh-home zsh-kit apply should pass" || fail "$output"
+    assert_contains "$output" '"mutation_status":"applied"' "fresh-home apply output" || fail "$output"
+
+    output="$(
+      env -u ZDOTDIR -u ZSH_CONFIG_DIR -u ZSH_BOOTSTRAP_SCRIPT_DIR -u ZSH_SCRIPT_DIR \
+        -u ZSH_TOOLS_DIR -u ZSH_CACHE_DIR -u ZSH_COMPDUMP \
+        HOME="$cli_home" \
+        zsh-kit setup \
+          --repo "$REPO_ROOT" \
+          --dest "$cli_dest" \
+          --write-zshenv \
+          --features docker,opencode \
+          --install-tools skip \
+          --apply \
+          --format json \
+          2>&1
+    )"
+    rc=$?
+    assert_eq 0 "$rc" "repeated zsh-kit apply should pass" || fail "$output"
+
+    [[ -f "$cli_home/.zshenv" ]] || fail "managed home .zshenv was not written"
+    assert_contains "$(<"$cli_home/.zshenv")" "Managed by zsh-kit" "managed zshenv marker" || fail "$(<"$cli_home/.zshenv")"
+
+    output="$(
+      env -u ZDOTDIR -u ZSH_CONFIG_DIR -u ZSH_BOOTSTRAP_SCRIPT_DIR -u ZSH_SCRIPT_DIR \
+        -u ZSH_TOOLS_DIR -u ZSH_CACHE_DIR -u ZSH_COMPDUMP \
+        HOME="$cli_home" \
+        ZSH_BOOT_WEATHER_ENABLED=false \
+        ZSH_BOOT_QUOTE_ENABLED=false \
+        PLUGIN_FETCH_DRY_RUN_ENABLED=true \
+        "$ZSH_BIN" -ic 'print -r -- "zdot=$ZDOTDIR"; print -r -- "features=$ZSH_FEATURES"; exit' \
+        2>&1
+    )"
+    rc=$?
+    assert_eq 0 "$rc" "managed zshenv shell smoke should pass" || fail "$output"
+    assert_contains "$output" "zdot=$cli_dest" "managed zshenv should set ZDOTDIR" || fail "$output"
+    assert_contains "$output" "features=docker,opencode" "managed zshenv should set features" || fail "$output"
+  else
+    print -r -- "SKIP: zsh-kit CLI not found"
+  fi
+
   print -r -- "OK"
 } always {
   rm -rf -- "$tmp_dir"

@@ -7,4 +7,4 @@ cd "$repo_root"
 # than `exec`-ing it: a compound command (&&, ||, ;, |) then runs every stage
 # and any failure aborts the gate. `exec` would bind only the first simple
 # command and silently drop the rest, turning a partial run into a green gate.
-zsh -f ./bootstrap/zsh-kit-setup.zsh --install-tools skip --smoke "$@"
+zsh -f ./bootstrap/agent-bootstrap.zsh "$@"

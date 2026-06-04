@@ -72,6 +72,7 @@ What it does:
 - sources `scripts/_internal/paths.exports.zsh`
 - defines core `ZSH_*` directory exports (`ZSH_CACHE_DIR`, `ZSH_SCRIPT_DIR`, etc.)
 - defines `HISTFILE` under `cache/`
+- sources `.private/zshenv.zsh` when present for machine-local env defaults
 - sets a minimal, deduplicated `PATH` (via `typeset -U path PATH`) including:
   - Homebrew (`/opt/homebrew/bin`, `/opt/homebrew/sbin`) when present
   - GNU “gnubin” shims (e.g. `coreutils` for `shuf`) when present
@@ -83,6 +84,7 @@ What does **not** belong here:
 - `compinit`
 - prompt/terminal UI
 - network calls (`curl`, `git`, etc.)
+- personal secrets or company-specific defaults in tracked files
 
 This file runs in places you may not expect (e.g. `zsh -c`, fzf preview subshells, editor tasks), so
 keep it quiet and predictable.

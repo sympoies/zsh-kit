@@ -13,4 +13,5 @@ nvim::neovim::Neovim editor
 rg::ripgrep::Fast grep engine
 starship::starship::Customizable prompt
 tree::tree::Directory structure view
+zsh-kit::sympoies/tap/nils-cli::nils-cli bundle (zsh-kit, fzf-cli, git-cli, weather-cli)
 zoxide::zoxide::Smart cd

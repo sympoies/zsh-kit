@@ -1,5 +1,10 @@
 # tool::brew-name::comment
 
+# macOS shell UX helpers
+terminal-notifier::terminal-notifier::Send macOS notifications from the CLI
+hs::hammerspoon::Automation tool for macOS
+im-select::im-select::Switch macOS input source from CLI
+
 # IDE / editor (host GUI; provides CLI entrypoints)
 code::visual-studio-code::VS Code editor (installs `code` / `code-tunnel`)
 

@@ -3,6 +3,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.3.0 - 2026-06-04
+
+### Changed
+
+- Added an agent-friendly bootstrap dispatcher that runs `zsh-kit setup` dry-run first, defaults to
+  `--install-tools skip`, and can run a post-setup smoke check through the destination hook.
+- Hardened setup guidance for other Macs by separating shell takeover from Homebrew tool
+  installation and documenting existing `~/.zshenv` conflict handling.
+- Moved detailed setup documentation from the README into `docs/guides/setup.md`, keeping the
+  README setup section focused on the shortest safe install path.
+
+### Fixed
+
+- Stabilized the Starship Codex prompt segment gate so it can detect Codex CLI sessions without
+  relying on brittle process-name matching.
+
 ## v2.2.1 - 2026-06-04
 
 ### Changed

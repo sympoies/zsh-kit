@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# codex-prompt-segment - Starship adapter for codex-cli prompt-segment.
+#
+# Resolve the local nils-cli development install before PATH. Starship custom
+# commands can run with an older session PATH, so relying on plain `codex-cli`
+# can accidentally hit the Homebrew formula after local CLI changes.
+
+set -uo pipefail
+
+resolve_codex_cli() {
+  if [[ -n "${CODEX_PROMPT_SEGMENT_CODEX_CLI-}" ]]; then
+    [[ -x "$CODEX_PROMPT_SEGMENT_CODEX_CLI" ]] || return 1
+    printf '%s\n' "$CODEX_PROMPT_SEGMENT_CODEX_CLI"
+    return 0
+  fi
+
+  local local_bin="$HOME/.local/nils-cli/bin/codex-cli"
+  if [[ -x "$local_bin" ]]; then
+    printf '%s\n' "$local_bin"
+    return 0
+  fi
+
+  command -v codex-cli 2>/dev/null
+}
+
+codex_cli="$(resolve_codex_cli)" || exit 1
+
+case "${1-}" in
+  --is-enabled|check)
+    exec "$codex_cli" prompt-segment check
+    ;;
+  --status|status)
+    shift
+    exec "$codex_cli" prompt-segment status "$@"
+    ;;
+  *)
+    exec "$codex_cli" prompt-segment "$@"
+    ;;
+esac

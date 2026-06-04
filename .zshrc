@@ -19,6 +19,20 @@ fi
 [[ -r "$paths_init" ]] && source "$paths_init"
 
 # ──────────────────────────────
+# nils-cli dev override (before Starship init)
+# ──────────────────────────────
+# `.zprofile` re-prepends /opt/homebrew/bin which would demote any prepend
+# done earlier in `paths.exports.zsh`. Re-apply the override before bootstrap
+# so Starship's session environment and ordinary shell commands agree.
+# The local dev install (`scripts/install-local-release-binaries.sh` →
+# ~/.local/nils-cli/bin) wins over the brew formula when populated. After
+# `brew upgrade nils-cli` the bump skill clears that dir, so brew wins again.
+# `typeset -U path` (set in paths.exports.zsh) dedups the earlier instance.
+if [[ -d "$HOME/.local/nils-cli/bin" ]]; then
+  path=("$HOME/.local/nils-cli/bin" $path)
+fi
+
+# ──────────────────────────────
 # History
 # ──────────────────────────────
 # macOS ships `/etc/zshrc`, which sets `HISTFILE=${ZDOTDIR:-$HOME}/.zsh_history`.
@@ -106,17 +120,4 @@ if [[ -t 1 ]] && zsh_env::is_true "${ZSH_BOOT_FEATURES_ENABLED-}" "ZSH_BOOT_FEAT
   (( ${#_failed_features[@]} > 0 )) && msg+=" (failed: ${(j:,:)_failed_features})"
 
   print -r -- "$msg"
-fi
-
-# ──────────────────────────────
-# nils-cli dev override (final, after all PATH mutations)
-# ──────────────────────────────
-# `.zprofile` re-prepends /opt/homebrew/bin which would demote any prepend
-# done earlier in `paths.exports.zsh`. Re-apply the override here so the
-# local dev install (`scripts/install-local-release-binaries.sh` → ~/.local/nils-cli/bin)
-# wins over the brew formula when populated. After `brew upgrade nils-cli`
-# the bump skill clears that dir, so this becomes a no-op and brew wins.
-# `typeset -U path` (set in paths.exports.zsh) dedups the earlier instance.
-if [[ -d "$HOME/.local/nils-cli/bin" ]]; then
-  path=("$HOME/.local/nils-cli/bin" $path)
 fi

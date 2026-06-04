@@ -66,18 +66,19 @@ export ZSH_BOOT_FEATURES_ENABLED=true
 ## Setup
 
 This repo is designed to be used as your Zsh config directory via `ZDOTDIR`.
+For existing `~/.zshenv` files, agent-driven setup, optional features, and
+tool installation policy, see the full setup guide:
+[docs/guides/setup.md](docs/guides/setup.md).
 
-### Install On A New Mac
-
-Install Homebrew first if it is not already available, then install the
-`zsh-kit` setup CLI from `nils-cli`:
+Install Homebrew first if it is not already available, then install the setup
+CLI from `nils-cli`:
 
 ```bash
 brew tap sympoies/tap
 brew install nils-cli
 ```
 
-Run a dry-run before mutating shell startup files:
+Preview the setup before mutating shell startup files:
 
 ```bash
 zsh-kit setup \
@@ -87,7 +88,7 @@ zsh-kit setup \
   --dry-run
 ```
 
-Apply the setup after reviewing the dry-run:
+Apply after reviewing the dry-run:
 
 ```bash
 zsh-kit setup \
@@ -97,143 +98,9 @@ zsh-kit setup \
   --apply
 ```
 
-Forward optional feature flags with `--features`:
-
-```bash
-zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
-  --write-zshenv \
-  --install-tools skip \
-  --features docker,opencode \
-  --apply
-```
-
-The safe default is `--install-tools skip`, which does not install or modify
-third-party CLI tools. After the shell setup is in place, preview required tools:
-
-```bash
-cd "$HOME/.config/zsh"
-./install-tools.zsh --dry-run
-```
-
-Install missing required tools only after reviewing the list:
-
-```bash
-./install-tools.zsh --yes
-```
-
-Use `./install-tools.zsh --all --yes` for optional tools, and
-`./install-tools.zsh --update-brew --yes` only when you intentionally want to
-run `brew update` first. The installer does not run `brew upgrade`.
-
-Existing commands already on `PATH` are treated as installed even when they came
-from another package manager such as Homebrew, `mise`, `asdf`, `pipx`, `cargo`,
-or a vendor installer.
-
-### Existing `~/.zshenv`
-
-`zsh-kit setup --write-zshenv` writes a managed `~/.zshenv` that exports
-`ZDOTDIR` and sources this repo's `.zshenv`. If the user already has an
-unmanaged `~/.zshenv`, setup stops with a conflict instead of overwriting it.
-
-Keep the existing file and add this snippet manually:
-
-```bash
-export ZDOTDIR="$HOME/.config/zsh"
-export ZSH_FEATURES="${ZSH_FEATURES:-}"
-if [[ -r "$ZDOTDIR/.zshenv" ]]; then
-  source "$ZDOTDIR/.zshenv"
-fi
-```
-
-Use `--force` only after backing up or intentionally replacing the existing
-file:
-
-```bash
-zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
-  --write-zshenv \
-  --install-tools skip \
-  --apply \
-  --force
-```
-
-### Runtime Setup With `zsh-kit`
-
-The repository exposes a stable setup hook at
-`bootstrap/zsh-kit-setup.zsh`. The nils-cli `zsh-kit` binary clones or updates
-the repository, validates this hook, and dispatches the repo-owned setup
-behavior. For repository-local validation, the hook can be run without private
-mutations:
-
-```bash
-bootstrap/zsh-kit-setup.zsh --features docker --install-tools skip --dry-run --smoke
-```
-
-For agent-driven setup from a checked-out copy of this repository, the project
-also exposes `.agents/scripts/bootstrap.sh` for the runtime-kit `$bootstrap`
-skill. The dispatcher defaults to a dry-run:
-
-```bash
-agent-run exec --cwd "$HOME/.config/zsh" -- ./.agents/scripts/bootstrap.sh --dry-run
-```
-
-After reviewing the plan, apply the same setup:
-
-```bash
-agent-run exec --cwd "$HOME/.config/zsh" -- ./.agents/scripts/bootstrap.sh --apply
-```
-
-Pass `--repo https://github.com/graysurf/zsh-kit.git` when the checked-out
-repository's `origin` is SSH but the target machine should install over HTTPS.
-The bootstrap dispatcher defaults to `--write-zshenv`, `--install-tools skip`,
-and a post-setup smoke check when the destination hook exists.
-
-In your `~/.zshenv`, set the custom config location **and explicitly source** this repo’s `.zshenv`:
-
-```bash
-export ZDOTDIR="$HOME/.config/zsh"
-if [[ -r "$ZDOTDIR/.zshenv" ]]; then
-  source "$ZDOTDIR/.zshenv"
-fi
-```
-
-### Optional Features (`ZSH_FEATURES`)
-
-Some modules are disabled by default (not sourced).
-Enable them by setting `ZSH_FEATURES` in your **home** `~/.zshenv` **before** sourcing this repo:
-
-```bash
-export ZSH_FEATURES="docker,opencode"
-```
-
-Current features:
-
-- `opencode`: enables `opencode-tools` (plus `opencode-tools` completion)
-- `docker`: enables `docker-tools` + `docker-aliases` (plus `docker-tools` + `docker` completion)
-
-Why the extra `source`? `.zshenv` is the first startup file, so setting `ZDOTDIR` inside `~/.zshenv`
-does not automatically make Zsh restart and load `$ZDOTDIR/.zshenv`.
-
-Zsh will now load:
-
-- `$ZDOTDIR/.zshenv` for all shells
-- `$ZDOTDIR/.zprofile` for login shells
-- `$ZDOTDIR/.zshrc` for interactive shells
-
-For more details, see: [docs/guides/startup-files.md](docs/guides/startup-files.md).
-
-Make sure that `.zshrc` sources the bootstrap loader:
-
-```bash
-source "$ZDOTDIR/bootstrap/bootstrap.zsh"
-```
-
-This will initialize all scripts in proper order via the `load_script_group_ordered()` / `load_script_group()` loader helpers.
-
-Machine-local environment defaults belong in ignored private files. The tracked
-`.zshenv` sources `.private/zshenv.zsh` when present, so personal paths, company
-hosts, tokens, and agent runtime overrides do not ship to other machines.
+The default `--install-tools skip` does not install or modify third-party CLI
+tools. Install missing tools separately after reviewing
+[`docs/guides/setup.md`](docs/guides/setup.md#tool-installation-policy).
 
 ## Philosophy
 

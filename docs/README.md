@@ -20,6 +20,7 @@ docs/
 
 ## 🧠 Guides
 
+- [`guides/setup.md`](guides/setup.md) — New Mac setup, `zsh-kit` bootstrap, `.zshenv` conflicts, and tool install policy
 - [`guides/startup-files.md`](guides/startup-files.md) — Zsh startup file roles (`.zshenv` / `.zprofile` / `.zshrc`) + `ZDOTDIR`
 - [`guides/plugin-system.md`](guides/plugin-system.md) — Declarative plugin loader + Git-based fetcher
 - [`guides/login-banner.md`](guides/login-banner.md) — Quote + emoji + optional weather banner

@@ -61,6 +61,14 @@ fi
 typeset -gr PRELOAD_FILE="$ZDOTDIR/bootstrap/00-preload.zsh"
 [[ -f "$PRELOAD_FILE" ]] && source "$PRELOAD_FILE"
 
+typeset -gr HOMEBREW_HELPER_FILE="$ZDOTDIR/scripts/_internal/homebrew.zsh"
+if [[ -f "$HOMEBREW_HELPER_FILE" ]]; then
+  source "$HOMEBREW_HELPER_FILE"
+else
+  printf "❌ homebrew helper not found: %s\n" "$HOMEBREW_HELPER_FILE"
+  exit 1
+fi
+
 TOOLS_REQUIRED_LIST="$ZSH_CONFIG_DIR/tools.list"
 TOOLS_OPTIONAL_LIST="$ZSH_CONFIG_DIR/tools.optional.list"
 TOOLS_MACOS_LIST="$ZSH_CONFIG_DIR/tools.macos.list"
@@ -80,15 +88,21 @@ function _install_tools::parse_tools_list_line() {
   setopt errexit nounset pipefail
 
   local line="$1"
+  line="${line%$'\r'}"   # tolerate CRLF checkouts (strip trailing CR)
   local -a parts=()
   parts=("${(@s/::/)line}")
 
-  local tool="${parts[1]}"
+  local tool="${parts[1]-}"
   local brew_name="${parts[2]-}"
   local comment=''
   if (( ${#parts} >= 3 )); then
     comment="${(j/::/)parts[3,-1]}"
   fi
+
+  # Trim surrounding whitespace from the tool/brew fields so a stray space or
+  # CR around a column does not become part of the command/formula name.
+  tool="${tool#"${tool%%[![:space:]]*}"}"; tool="${tool%"${tool##*[![:space:]]}"}"
+  brew_name="${brew_name#"${brew_name%%[![:space:]]*}"}"; brew_name="${brew_name%"${brew_name##*[![:space:]]}"}"
 
   brew_name="${brew_name:-$tool}"
   reply=("$tool" "$brew_name" "$comment")
@@ -105,38 +119,10 @@ function _install_tools::ensure_homebrew_on_path() {
     return 0
   fi
 
-  local home="${HOME-}"
-  local -a candidates=(
-    /opt/homebrew/bin/brew
-    /usr/local/bin/brew
-    /home/linuxbrew/.linuxbrew/bin/brew
-  )
-  [[ -n "$home" ]] && candidates+=("$home/.linuxbrew/bin/brew")
-
-  local candidate=''
-  for candidate in "${candidates[@]}"; do
-    if [[ -x "$candidate" ]]; then
-      local homebrew_prefix="${candidate:h:h}"
-      export HOMEBREW_PREFIX="$homebrew_prefix"
-      export HOMEBREW_CELLAR="$homebrew_prefix/Cellar"
-      export HOMEBREW_REPOSITORY="$homebrew_prefix"
-
-      local hb_bin="$homebrew_prefix/bin"
-      local hb_sbin="$homebrew_prefix/sbin"
-      local -a prefix_paths=() rest_paths=()
-      [[ -d "$hb_bin" ]] && prefix_paths+=("$hb_bin")
-      [[ -d "$hb_sbin" ]] && prefix_paths+=("$hb_sbin")
-      if (( ${#prefix_paths[@]} > 0 )); then
-        rest_paths=("${path[@]}")
-        rest_paths=("${(@)rest_paths:#$hb_bin}")
-        rest_paths=("${(@)rest_paths:#$hb_sbin}")
-        path=("${prefix_paths[@]}" "${rest_paths[@]}")
-      fi
-      return 0
-    fi
-  done
-
-  return 1
+  local brew_path=''
+  brew_path="$(zsh_brew::discover || true)"
+  [[ -n "$brew_path" ]] || return 1
+  zsh_brew::apply_env "$brew_path"
 }
 
 # _install_tools::is_installed <tool> <brew_name>
@@ -252,7 +238,8 @@ if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS
 
   for tools_list_file in "${tools_list_files[@]}"; do
     while IFS= read -r line; do
-      [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+      # Skip blank lines and comments (allow leading whitespace before `#`).
+      [[ "$line" =~ '^[[:space:]]*(#|$)' ]] && continue
       _install_tools::parse_tools_list_line "$line"
       tool="$reply[1]"
       brew_name="$reply[2]"
@@ -276,7 +263,7 @@ if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS
     elif [[ -t 0 ]]; then
       printf "❓ Proceed with installation? [y/N]: "
       read -r confirm
-      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      if [[ ! "$confirm" =~ '^[Yy]([Ee][Ss])?$' ]]; then
         printf "❌ Aborted by user.\n"
         exit 1
       fi
@@ -301,7 +288,8 @@ failed=0
 typeset -A seen_tools=()
 for tools_list_file in "${tools_list_files[@]}"; do
   while IFS= read -r line; do
-    [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+    # Skip blank lines and comments (allow leading whitespace before `#`).
+    [[ "$line" =~ '^[[:space:]]*(#|$)' ]] && continue
 
     _install_tools::parse_tools_list_line "$line"
     tool="$reply[1]"

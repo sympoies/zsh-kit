@@ -58,7 +58,11 @@ typeset -g ZSH_COMPLETION_CACHE_DIR="${ZSH_COMPLETION_CACHE_DIR:-$ZSH_CACHE_DIR/
 # ──────────────────────────────────────
 # fzf-tab configuration (after compinit)
 # ──────────────────────────────────────
-setopt extendedglob globdots
+setopt extendedglob
+# Surface dotfiles in completion without enabling `globdots` session-wide
+# (which would silently make `rm *` / `cp *` / `ls *` match dotfiles too).
+# `_comp_options` is applied by the completion system only while completing.
+_comp_options+=(globdots)
 # avoid auto-inserting common prefix before menu
 unsetopt AUTO_MENU MENU_COMPLETE
 # Use modern menu selection

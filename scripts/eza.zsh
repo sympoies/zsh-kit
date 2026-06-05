@@ -11,6 +11,13 @@ fi
 
 export EZA_CONFIG_DIR="$HOME/.config/eza"
 
+# Shared flag sets composed by the list wrappers below. Keeping them in one place
+# avoids the per-wrapper drift that crept in when each command repeated its flags.
+# - _EZA_BASE: presentation flags every wrapper shares.
+# - _EZA_GIT:  Git status coloring + column, added by the git-aware wrappers.
+typeset -ga _EZA_BASE=(--icons --group-directories-first --time-style=iso)
+typeset -ga _EZA_GIT=(--color=always --git)
+
 # __eza_with_optional_depth <eza-args...> -- [depth] [args...]
 # Internal helper: run `eza` with an optional numeric depth (`-L`).
 # Usage: __eza_with_optional_depth <eza-args...> -- [depth] [args...]
@@ -46,7 +53,7 @@ __eza_with_optional_depth() {
 # List files (including dotfiles) using `eza`.
 # Usage: ll [path...]
 ll() {
-  __eza_with_optional_depth -alh --icons --group-directories-first --time-style=iso -- "$@"
+  __eza_with_optional_depth -alh "${_EZA_BASE[@]}" -- "$@"
   return $?
 }
 
@@ -54,7 +61,7 @@ ll() {
 # List files (excluding dotfiles) using `eza`.
 # Usage: lx [path...]
 lx() {
-  __eza_with_optional_depth -lh --icons --group-directories-first --time-style=iso -- "$@"
+  __eza_with_optional_depth -lh "${_EZA_BASE[@]}" -- "$@"
   return $?
 }
 
@@ -62,7 +69,7 @@ lx() {
 # List files (including dotfiles) with Git status using `eza`.
 # Usage: lg [path...]
 lg() {
-  __eza_with_optional_depth -alh --icons --group-directories-first --color=always --git --time-style=iso -- "$@"
+  __eza_with_optional_depth -alh "${_EZA_BASE[@]}" "${_EZA_GIT[@]}" -- "$@"
   return $?
 }
 
@@ -70,7 +77,7 @@ lg() {
 # List files (excluding dotfiles) with Git status using `eza`.
 # Usage: lgx [path...]
 lgx() {
-  __eza_with_optional_depth -lh --icons --group-directories-first --color=always --git --time-style=iso -- "$@"
+  __eza_with_optional_depth -lh "${_EZA_BASE[@]}" "${_EZA_GIT[@]}" -- "$@"
   return $?
 }
 
@@ -78,7 +85,7 @@ lgx() {
 # List directories with Git repo status indicators using `eza`.
 # Usage: lgr [path...]
 lgr() {
-  __eza_with_optional_depth -alh --icons --group-directories-first --color=always --git --git-repos --time-style=iso -- "$@"
+  __eza_with_optional_depth -alh "${_EZA_BASE[@]}" "${_EZA_GIT[@]}" --git-repos -- "$@"
   return $?
 }
 
@@ -86,7 +93,7 @@ lgr() {
 # Tree view (including dotfiles) using `eza`.
 # Usage: lt [path...]
 lt() {
-  __eza_with_optional_depth -aT --group-directories-first --icons -- "$@"
+  __eza_with_optional_depth -aT "${_EZA_BASE[@]}" -- "$@"
   return $?
 }
 
@@ -103,7 +110,7 @@ llt() {
 # Long-format tree view (including dotfiles) with Git status via `eza`, respecting `.gitignore`.
 # Usage: lgt [path...]
 lgt() {
-  __eza_with_optional_depth -alh -T --icons --group-directories-first --color=always --git --git-ignore --time-style=iso -- "$@"
+  __eza_with_optional_depth -alh -T "${_EZA_BASE[@]}" "${_EZA_GIT[@]}" --git-ignore -- "$@"
   return $?
 }
 
@@ -111,7 +118,7 @@ lgt() {
 # Long-format tree view (excluding dotfiles) with Git status via `eza`, respecting `.gitignore`.
 # Usage: lgxt [path...]
 lgxt() {
-  __eza_with_optional_depth -lh -T --icons --group-directories-first --color=always --git --git-ignore --time-style=iso -- "$@"
+  __eza_with_optional_depth -lh -T "${_EZA_BASE[@]}" "${_EZA_GIT[@]}" --git-ignore -- "$@"
   return $?
 }
 

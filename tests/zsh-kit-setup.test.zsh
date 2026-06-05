@@ -2,6 +2,13 @@
 
 setopt pipe_fail nounset
 
+# When this test runs inside a git hook (e.g. lefthook pre-push), git exports
+# GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE into the environment. They leak into
+# the `git clone` that `zsh-kit setup` performs against its own temp repos and
+# break it ("working tree already exists" / wrong detected origin). This test
+# manages its own repos, so drop any inherited git context up front.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_REFLOG_ACTION
+
 typeset -gr SCRIPT_PATH="${0:A}"
 typeset -gr TEST_DIR="${SCRIPT_PATH:h}"
 typeset -gr REPO_ROOT="${TEST_DIR:h}"

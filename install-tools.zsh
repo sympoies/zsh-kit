@@ -44,12 +44,23 @@ else
   exit 1
 fi
 
+typeset -gr HOMEBREW_HELPER_FILE="$ZDOTDIR/scripts/_internal/homebrew.zsh"
+if [[ -f "$HOMEBREW_HELPER_FILE" ]]; then
+  source "$HOMEBREW_HELPER_FILE"
+else
+  print -u2 -r -- "homebrew helper not found: $HOMEBREW_HELPER_FILE"
+  exit 1
+fi
+
 function _install_tools::ensure_system_paths() {
   emulate -L zsh
   setopt errexit nounset pipefail
 
+  # Operate on the global `path`: `-g` keeps it global (and unique) instead of
+  # creating a function-local shadow. A plain `typeset -U path=($path)` here
+  # discarded the additions on return, so the exec'd installer never saw them.
+  typeset -gU path=($path)
   local dir=''
-  typeset -U path=($path)
   for dir in /usr/bin /bin; do
     [[ -d "$dir" ]] || continue
     if (( ${path[(Ie)$dir]} == 0 )); then
@@ -78,48 +89,6 @@ function _install_tools::zsh_executable() {
   return 1
 }
 
-function _install_tools::apply_homebrew_env() {
-  emulate -L zsh
-  setopt errexit nounset pipefail
-
-  local brew_path="${1-}"
-  [[ -n "$brew_path" ]] || return 1
-  [[ "$brew_path" == /* && -x "$brew_path" ]] || return 1
-
-  local homebrew_prefix="${brew_path:h:h}"
-  export HOMEBREW_PREFIX="$homebrew_prefix"
-  export HOMEBREW_CELLAR="$homebrew_prefix/Cellar"
-  export HOMEBREW_REPOSITORY="$homebrew_prefix"
-
-  local hb_bin="$homebrew_prefix/bin"
-  local hb_sbin="$homebrew_prefix/sbin"
-  local -a prefix_paths=() rest_paths=()
-  [[ -d "$hb_bin" ]] && prefix_paths+=("$hb_bin")
-  [[ -d "$hb_sbin" ]] && prefix_paths+=("$hb_sbin")
-  if (( ${#prefix_paths[@]} > 0 )); then
-    rest_paths=("${path[@]}")
-    rest_paths=("${rest_paths:#$hb_bin}")
-    rest_paths=("${rest_paths:#$hb_sbin}")
-    path=("${prefix_paths[@]}" "${rest_paths[@]}")
-  fi
-
-  local hb_fpath="$homebrew_prefix/share/zsh/site-functions"
-  if [[ -d "$hb_fpath" ]] && (( ${fpath[(Ie)$hb_fpath]} == 0 )); then
-    fpath=("$hb_fpath" $fpath)
-  fi
-
-  if [[ -n "${MANPATH-}" ]]; then
-    export MANPATH=":${MANPATH#:}"
-  fi
-
-  local hb_info="$homebrew_prefix/share/info"
-  if [[ -d "$hb_info" ]]; then
-    export INFOPATH="$hb_info:${INFOPATH-}"
-  fi
-
-  return 0
-}
-
 function _install_tools::tap_homebrew_taps() {
   emulate -L zsh
   setopt errexit nounset pipefail
@@ -133,14 +102,6 @@ function _install_tools::tap_homebrew_taps() {
     tap_names+=("$DAIPEIHUST_HOMEBREW_TAP_NAME")
   fi
 
-  local home="${HOME-}"
-  local -a candidates=(
-    /opt/homebrew/bin/brew
-    /usr/local/bin/brew
-    /home/linuxbrew/.linuxbrew/bin/brew
-  )
-  [[ -n "$home" ]] && candidates+=("$home/.linuxbrew/bin/brew")
-
   local -a brew_paths=()
   local brew_path=''
   brew_path="$(whence -p brew || true)"
@@ -149,7 +110,7 @@ function _install_tools::tap_homebrew_taps() {
   fi
 
   local candidate=''
-  for candidate in "${candidates[@]}"; do
+  for candidate in ${(f)"$(zsh_brew::candidates)"}; do
     if [[ -x "$candidate" ]] && (( ${brew_paths[(Ie)$candidate]} == 0 )); then
       brew_paths+=("$candidate")
     fi
@@ -182,28 +143,12 @@ function _install_tools::ensure_homebrew() {
 
   local quiet="$1"
 
-  local home="${HOME-}"
-  local -a candidates=(
-    /opt/homebrew/bin/brew
-    /usr/local/bin/brew
-    /home/linuxbrew/.linuxbrew/bin/brew
-  )
-  [[ -n "$home" ]] && candidates+=("$home/.linuxbrew/bin/brew")
-
   local brew_path=''
-  brew_path="$(whence -p brew || true)"
+  brew_path="$(zsh_brew::discover || true)"
   if [[ -n "$brew_path" ]]; then
-    _install_tools::apply_homebrew_env "$brew_path" || return 1
+    zsh_brew::apply_env "$brew_path" || return 1
     return 0
   fi
-
-  local candidate=''
-  for candidate in "${candidates[@]}"; do
-    if [[ -x "$candidate" ]]; then
-      _install_tools::apply_homebrew_env "$candidate" || return 1
-      return 0
-    fi
-  done
 
   case "${OSTYPE-}" in
     darwin*|linux*) ;;
@@ -234,16 +179,9 @@ function _install_tools::ensure_homebrew() {
     NONINTERACTIVE=1 bash -c "$install_script"
   fi
 
-  for candidate in "${candidates[@]}"; do
-    if [[ -x "$candidate" ]]; then
-      _install_tools::apply_homebrew_env "$candidate" || return 1
-      return 0
-    fi
-  done
-
-  brew_path="$(whence -p brew || true)"
+  brew_path="$(zsh_brew::discover || true)"
   if [[ -n "$brew_path" ]]; then
-    _install_tools::apply_homebrew_env "$brew_path" || return 1
+    zsh_brew::apply_env "$brew_path" || return 1
     return 0
   fi
 

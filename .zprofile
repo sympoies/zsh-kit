@@ -9,60 +9,19 @@
 # - This repo also prepends `/opt/homebrew/bin` (and GNU "gnubin" shims) via
 #   `scripts/_internal/paths.exports.zsh` so non-login shells can still find `brew`.
 #   See `docs/guides/startup-files.md`.
+# - Brew discovery + env application is shared with the installers via
+#   `scripts/_internal/homebrew.zsh` (sourced below).
 
-typeset homebrew_path=''
-if command -v brew >/dev/null 2>&1; then
-  homebrew_path="$(command -v brew)"
-  [[ "$homebrew_path" == /* && -x "$homebrew_path" ]] || homebrew_path=''
-fi
-if [[ -z "$homebrew_path" ]]; then
-  typeset home="${HOME-}"
-  typeset -a candidates=(
-    /opt/homebrew/bin/brew
-    /usr/local/bin/brew
-    /home/linuxbrew/.linuxbrew/bin/brew
-  )
-  [[ -n "$home" ]] && candidates+=("$home/.linuxbrew/bin/brew")
+typeset _zsh_brew_helper="${ZDOTDIR:-$HOME/.config/zsh}/scripts/_internal/homebrew.zsh"
+[[ -r "$_zsh_brew_helper" ]] && source "$_zsh_brew_helper"
+unset _zsh_brew_helper
 
-  typeset candidate=''
-  for candidate in "${candidates[@]}"; do
-    [[ -x "$candidate" ]] || continue
-    homebrew_path="$candidate"
-    break
-  done
-fi
-
-if [[ -n "$homebrew_path" ]]; then
-  typeset homebrew_prefix="${homebrew_path:h:h}"
-  export HOMEBREW_PREFIX="$homebrew_prefix"
-  export HOMEBREW_CELLAR="$homebrew_prefix/Cellar"
-  export HOMEBREW_REPOSITORY="$homebrew_prefix"
-
-  typeset hb_bin="$homebrew_prefix/bin"
-  typeset hb_sbin="$homebrew_prefix/sbin"
-  typeset -a prefix_paths=() rest_paths=()
-  [[ -d "$hb_bin" ]] && prefix_paths+=("$hb_bin")
-  [[ -d "$hb_sbin" ]] && prefix_paths+=("$hb_sbin")
-  if (( ${#prefix_paths[@]} > 0 )); then
-    rest_paths=("${path[@]}")
-    rest_paths=("${(@)rest_paths:#$hb_bin}")
-    rest_paths=("${(@)rest_paths:#$hb_sbin}")
-    path=("${prefix_paths[@]}" "${rest_paths[@]}")
+if (( ${+functions[zsh_brew::discover]} && ${+functions[zsh_brew::apply_env]} )); then
+  typeset homebrew_path=''
+  homebrew_path="$(zsh_brew::discover || true)"
+  if [[ -n "$homebrew_path" ]]; then
+    zsh_brew::apply_env "$homebrew_path"
+    export HOMEBREW_AUTO_UPDATE_SECS=604800 # 7 days
   fi
-
-  typeset hb_fpath="$homebrew_prefix/share/zsh/site-functions"
-  if [[ -d "$hb_fpath" ]] && (( ${fpath[(Ie)$hb_fpath]} == 0 )); then
-    fpath=("$hb_fpath" $fpath)
-  fi
-
-  if [[ -n "${MANPATH-}" ]]; then
-    export MANPATH=":${MANPATH#:}"
-  fi
-
-  typeset hb_info="$homebrew_prefix/share/info"
-  if [[ -d "$hb_info" ]]; then
-    export INFOPATH="$hb_info:${INFOPATH-}"
-  fi
-
-  export HOMEBREW_AUTO_UPDATE_SECS=604800 # 7 days
+  unset homebrew_path
 fi

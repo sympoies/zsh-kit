@@ -91,8 +91,17 @@ if [[ -o interactive ]] && (( ${+functions[_zsh_highlight]} )); then
     fi
   fi
 
+  # Remove-then-add each hook so re-sourcing (e.g. `reload`) does not register
+  # the paste-restore widgets repeatedly. Mirrors the `add-zsh-hook -d` pattern
+  # used in scripts/interactive/runtime.zsh.
   autoload -Uz add-zle-hook-widget
-  add-zle-hook-widget line-init zsh_fsh_paste_line_init
-  add-zle-hook-widget line-finish zsh_fsh_paste_line_finish
-  add-zle-hook-widget line-pre-redraw zsh_fsh_paste_pre_redraw
+  typeset _zsh_fsh_hook=''
+  for _zsh_fsh_hook in \
+    line-init:zsh_fsh_paste_line_init \
+    line-finish:zsh_fsh_paste_line_finish \
+    line-pre-redraw:zsh_fsh_paste_pre_redraw; do
+    add-zle-hook-widget -d "${_zsh_fsh_hook%%:*}" "${_zsh_fsh_hook##*:}" 2>/dev/null
+    add-zle-hook-widget "${_zsh_fsh_hook%%:*}" "${_zsh_fsh_hook##*:}"
+  done
+  unset _zsh_fsh_hook
 fi

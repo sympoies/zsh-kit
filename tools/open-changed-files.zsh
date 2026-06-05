@@ -383,6 +383,10 @@ main() {
   else
     files=("${(@f)$(_ocf::collect_git_files)}")
   fi
+  # `${(@f)...}` yields a single empty element when the collector prints
+  # nothing, which would otherwise slip past the count guard below and reach
+  # `code` as an empty path. Drop empty elements first.
+  files=("${(@)files:#}")
 
   (( ${#files[@]} == 0 )) && return 0
   files=("${files[@]:0:$max_files}")

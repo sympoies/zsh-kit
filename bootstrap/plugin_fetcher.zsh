@@ -9,6 +9,10 @@ ZSH_PLUGINS_DIR="${ZSH_PLUGINS_DIR:-$ZDOTDIR/plugins}"
 PLUGIN_FETCH_DRY_RUN_ENABLED="${PLUGIN_FETCH_DRY_RUN_ENABLED-false}"
 PLUGIN_FETCH_FORCE_ENABLED="${PLUGIN_FETCH_FORCE_ENABLED-false}"
 PLUGIN_UPDATE_FILE="$ZSH_CACHE_DIR/plugin.timestamp"
+# Single source of truth for the auto-update cadence. Both the trigger
+# (plugin_maybe_auto_update) and the status countdown (plugin_print_status)
+# derive from this value so they can never drift apart.
+typeset -gi PLUGIN_UPDATE_INTERVAL_DAYS="${PLUGIN_UPDATE_INTERVAL_DAYS:-7}"
 
 # plugin_fetch_if_missing_from_entry <entry>
 # Ensure the plugin referenced by a `config/plugins.list` entry exists under $ZSH_PLUGINS_DIR.
@@ -127,7 +131,7 @@ plugin_update_all() {
 # Usage: plugin_maybe_auto_update
 # Notes:
 # - Calls plugin_update_all and writes a new timestamp when an update is performed.
-# - Current threshold: 7 days (see implementation).
+# - Threshold: $PLUGIN_UPDATE_INTERVAL_DAYS (default 7 days).
 plugin_maybe_auto_update() {
   typeset now_epoch='' last_epoch=''
 
@@ -139,8 +143,8 @@ plugin_maybe_auto_update() {
     last_epoch=0
   fi
 
-  if (( now_epoch - last_epoch > 7 * 86400 )); then
-    printf "📦 Auto-updating Zsh plugins (last update over 7 days ago)...\n\n"
+  if (( now_epoch - last_epoch > PLUGIN_UPDATE_INTERVAL_DAYS * 86400 )); then
+    printf "📦 Auto-updating Zsh plugins (last update over %d days ago)...\n\n" "$PLUGIN_UPDATE_INTERVAL_DAYS"
     plugin_update_all
     printf "%s\n" "$now_epoch" > "$PLUGIN_UPDATE_FILE"
 	  fi
@@ -165,7 +169,7 @@ plugin_print_status() {
   now_epoch=$(date +%s)
   last_epoch=$(<"$PLUGIN_UPDATE_FILE")
   days_ago=$(( (now_epoch - last_epoch) / 86400 ))
-  days_left=$(( 30 - days_ago ))
+  days_left=$(( PLUGIN_UPDATE_INTERVAL_DAYS - days_ago ))
   last_date=$(date -j -f %s "$last_epoch" +"%Y-%m-%d" 2>/dev/null || date -d "@$last_epoch" +"%Y-%m-%d")
 
   printf "📦 Plugin last updated: %s (%d days ago)\n" "$last_date" "$days_ago"

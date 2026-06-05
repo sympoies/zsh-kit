@@ -22,6 +22,9 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-plugin-interval-test.XX
 typeset cache_dir="$tmp_dir/cache"
 mkdir -p -- "$cache_dir" || fail "failed to create cache dir"
 
+# Export ZSH_PLUGINS_DIR so the fetcher's `${ZSH_PLUGINS_DIR:-$ZDOTDIR/plugins}`
+# never dereferences $ZDOTDIR, which is unset in a clean CI environment under nounset.
+typeset -x ZSH_PLUGINS_DIR="$tmp_dir/plugins"
 typeset -x ZSH_CACHE_DIR="$cache_dir"
 
 [[ -f "$PRELOAD_SCRIPT" ]] || fail "missing preload script: $PRELOAD_SCRIPT"

@@ -102,62 +102,6 @@ script_is_in_underscored_path() {
   return 1
 }
 
-# load_script_group <group_name> <base_dir> [exclude...]
-# Load scripts under a directory with timing output.
-# Usage: load_script_group <group_name> <base_dir> [exclude...]
-# Notes:
-# - Respects `ZSH_DEBUG` for verbose output.
-load_script_group() {
-  typeset group_name="$1"
-  typeset base_dir="$2"
-  shift 2
-  typeset -a exclude=("$@")
-
-  typeset -a all_scripts=() filtered_scripts=() skipped_scripts=() remove_list=()
-  typeset file='' ex=''
-  all_scripts=(${(f)"$(collect_scripts "$base_dir")"})
-
-  skipped_scripts=()
-  for file in "${all_scripts[@]}"; do
-    script_is_in_underscored_path "$base_dir" "$file" && skipped_scripts+=("$file")
-  done
-
-  if [[ "${ZSH_DEBUG:-0}" -ge 2 ]]; then
-    printf "🗂 Loading group: %s\n" "$group_name"
-    printf "🔽 Base: %s\n" "$base_dir"
-    if (( ${#skipped_scripts[@]} > 0 )); then
-      printf "⏭ Skipped (_* folder/file):\n"
-      printf '   • %s\n' "${skipped_scripts[@]}"
-    fi
-    printf "🚫 Exclude:\n"
-    for ex in "${exclude[@]}"; do
-      printf "   - %s\n" "$ex"
-    done
-  fi
-
-  if [[ "${ZSH_DEBUG:-0}" -ge 3 ]]; then
-    printf "📦 All collected scripts:\n"
-    printf '   • %s\n' "${all_scripts[@]}"
-  fi
-
-  remove_list=("${exclude[@]}" "${skipped_scripts[@]}")
-  remove_list=(${remove_list:#})
-  remove_list=(${(u)remove_list})
-
-  filtered_scripts=(${(f)"$(
-    printf "%s\n" "${all_scripts[@]}" | grep -vFxf <(printf "%s\n" "${remove_list[@]}")
-  )"})
-
-  if [[ "${ZSH_DEBUG:-0}" -ge 3 ]]; then
-    printf "✅ Scripts after filtering:\n"
-    printf '   → %s\n' "${filtered_scripts[@]}"
-  fi
-
-  for file in "${filtered_scripts[@]}"; do
-    source_file "$file"
-  done
-}
-
 # load_script_group_ordered <group-name> <base-dir> [--first <file...>] [--last <file...>] [--exclude <file...>] [--] [<exclude...>]
 # Load scripts under a directory in a deterministic order, with optional pinned
 # "first" and "last" files and an exclusion list.

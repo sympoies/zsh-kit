@@ -119,7 +119,7 @@ check_no_arguments_specs_outside_arguments() {
   typeset file="$1"
   typeset line='' trimmed='' line_rtrim=''
   typeset -i line_no=0 in_arguments=0 failed=0
-  typeset -r arguments_style_option_re='--[^[:space:]]+\\[[^]]+\\]'
+  typeset -r arguments_style_option_re='--[^[:space:]]+\[[^]]+\]'
 
   while IFS=$'\n' read -r line; do
     line_no=$((line_no + 1))

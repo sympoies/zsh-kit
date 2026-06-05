@@ -111,8 +111,8 @@ script_is_in_underscored_path() {
 #     [--first <file...>] [--last <file...>] [--exclude <file...>] [--] [<exclude...>]
 #
 # Notes:
-# - Any arguments not preceded by --first/--last/--exclude are treated as excludes
-#   (for compatibility with load_script_group).
+# - Any arguments not preceded by --first/--last/--exclude are treated as a bare
+#   exclude list.
 # - Pinned first/last files are always loaded in the order provided.
 load_script_group_ordered() {
   typeset group_name="$1"

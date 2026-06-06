@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
   subcommands; zsh-kit keeps plugin list loading, `source`, and `fpath` glue.
 - `opencode-tools` prompt helpers now delegate to native nils-cli `opencode-cli`
   agent subcommands; zsh-kit keeps feature loading, aliases, and compatibility dispatch.
+- `kill-port` and `kill-process` now delegate to native nils-cli `fzf-cli kill-*`
+  subcommands; zsh-kit keeps the historical function names and aliases.
 - `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
   only for the historical shell function, alias, and compatibility wrapper.
 

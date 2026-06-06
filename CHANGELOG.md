@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## v2.4.0 - 2026-06-06
+
 ### Changed
 
 - `docker-tools` container/compose/run helpers now delegate to the native nils-cli

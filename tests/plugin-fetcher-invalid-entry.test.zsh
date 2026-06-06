@@ -26,10 +26,23 @@ print -r -- "sentinel" >| "$plugins_dir/keep.txt" || fail "failed to write senti
 typeset cache_dir="$tmp_dir/cache"
 mkdir -p -- "$cache_dir" || fail "failed to create cache dir"
 
+typeset stub="$tmp_dir/zsh-kit"
+typeset stub_log="$tmp_dir/zsh-kit.log"
+: >| "$stub_log" || fail "failed to create stub log"
+{
+  print -r -- '#!/usr/bin/env -S zsh -f'
+  print -r -- 'setopt pipe_fail nounset'
+  print -r -- 'print -r -- "${(j: :)argv}" >>| "${ZSH_KIT_PLUGIN_STUB_LOG:?}"'
+  print -r -- 'exit 65'
+} >| "$stub" || fail "failed to write zsh-kit stub"
+chmod 755 "$stub" || fail "failed to chmod zsh-kit stub"
+
 typeset -x ZSH_PLUGINS_DIR="$plugins_dir"
 typeset -x ZSH_CACHE_DIR="$cache_dir"
 typeset -x PLUGIN_FETCH_FORCE_ENABLED=true
 typeset -x PLUGIN_FETCH_DRY_RUN_ENABLED=false
+typeset -x ZSH_KIT_PLUGIN_CLI="$stub"
+typeset -x ZSH_KIT_PLUGIN_STUB_LOG="$stub_log"
 
 [[ -f "$PRELOAD_SCRIPT" ]] || fail "missing preload script: $PRELOAD_SCRIPT"
 source "$PRELOAD_SCRIPT"
@@ -54,3 +67,8 @@ plugin_fetch_if_missing_from_entry "../evil" && fail "expected traversal entry t
 [[ -f "$plugins_dir/keep.txt" ]] || fail "sentinel should remain after traversal entry"
 [[ -d "$traversal_dir" ]] || fail "traversal dir should remain after traversal entry"
 [[ -f "$traversal_dir/keep.txt" ]] || fail "traversal sentinel should remain after traversal entry"
+
+typeset log_text=''
+log_text="$(command cat -- "$stub_log")" || fail "failed to read stub log"
+[[ "$log_text" == *"plugin fetch --entry ../evil --plugins-dir $plugins_dir --force"* ]] \
+  || fail "expected traversal entry to be delegated with --force, got: $log_text"

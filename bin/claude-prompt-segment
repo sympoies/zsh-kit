@@ -1,151 +1,39 @@
 #!/usr/bin/env bash
-# claude-prompt-segment — Claude 5h/weekly usage for starship.
-# Output mirrors codex-cli prompt-segment:
-#   <label> 5h:<remaining>% W:<remaining>% <weekly_reset_time>[<stale_suffix>]
-# with per-token ANSI color (≥80 cyan, ≥60 green, ≥40 yellow, ≥20 orange, <20 red).
-# Reads OAuth token from macOS Keychain (Claude Code-credentials),
-# hits api.anthropic.com/api/oauth/usage, caches under
-# ~/Library/Caches/claude-prompt-segment/usage.json (TTL 60s).
-# On fetch failure falls back to the existing cache and appends a stale suffix
-# (default " (stale)", override via CLAUDE_PROMPT_STALE_SUFFIX; set empty to disable).
+# claude-prompt-segment - Starship adapter for claude-cli prompt-segment.
+#
+# Resolve the local nils-cli development install before PATH. Starship custom
+# commands can run with an older session PATH, so relying on plain `claude-cli`
+# can accidentally hit an older global install after local CLI changes.
 
 set -uo pipefail
 
-CACHE_DIR="$HOME/Library/Caches/claude-prompt-segment"
-CACHE_FILE="$CACHE_DIR/usage.json"
-TTL="${CLAUDE_PROMPT_TTL:-60}"
-TIME_FORMAT="%m-%d %H:%M"
-MODE="emit"
+resolve_claude_cli() {
+  if [[ -n "${CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI-}" ]]; then
+    [[ -x "$CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI" ]] || return 1
+    printf '%s\n' "$CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI"
+    return 0
+  fi
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --is-enabled)        MODE="check"; shift ;;
-    --time-format)
-      if [[ $# -lt 2 ]]; then
-        printf '%s\n' "claude-prompt-segment: --time-format requires a value" >&2
-        exit 2
-      fi
-      TIME_FORMAT="$2"; shift 2 ;;
-    --time-format=*)     TIME_FORMAT="${1#*=}"; shift ;;
-    --refresh)           TTL=0; shift ;;
-    -h|--help)
-      cat <<EOF
-Usage: claude-prompt-segment [--is-enabled] [--time-format FMT] [--refresh]
-  --is-enabled     Exit 0 if Keychain has a Claude OAuth access token.
-  --time-format    strftime for reset display (default: '%m-%d %H:%M').
-  --refresh        Force a fetch attempt regardless of TTL (keeps old cache on failure).
-Env:
-  CLAUDE_PROMPT_TTL=<seconds>      cache TTL (default 60)
-  CLAUDE_PROMPT_STALE_SUFFIX=<str> appended when falling back to stale cache
-                                   (default ' (stale)', set empty to disable)
-  NO_COLOR=1                       disable ANSI colors
-EOF
-      exit 0 ;;
-    *) shift ;;
-  esac
-done
+  local local_bin="$HOME/.local/nils-cli/bin/claude-cli"
+  if [[ -x "$local_bin" ]]; then
+    printf '%s\n' "$local_bin"
+    return 0
+  fi
 
-if [[ "$MODE" == "check" ]]; then
-  creds=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null) || exit 1
-  token=$(printf '%s' "$creds" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || exit 1
-  [[ -n "$token" && "$token" != "null" ]]
-  exit $?
-fi
-
-mkdir -p "$CACHE_DIR"
-
-fetch_fresh() {
-  local creds token
-  creds=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null) || return 1
-  token=$(printf '%s' "$creds" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
-  [[ -z "$token" ]] && return 1
-  curl -fsS --max-time 5 \
-    -H "Authorization: Bearer $token" \
-    -H "anthropic-beta: oauth-2025-04-20" \
-    -H "User-Agent: claude-code/2.1.0" \
-    -H "Accept: application/json" \
-    https://api.anthropic.com/api/oauth/usage \
-    -o "$CACHE_FILE.tmp" 2>/dev/null \
-    && mv "$CACHE_FILE.tmp" "$CACHE_FILE"
+  command -v claude-cli 2>/dev/null
 }
 
-needs_refresh=1
-if [[ -f "$CACHE_FILE" ]]; then
-  # Force BSD stat — GNU coreutils (gnubin in PATH) takes -f as filesystem, not format.
-  mtime=$(/usr/bin/stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0)
-  age=$(( $(date +%s) - mtime ))
-  [[ "$age" -lt "$TTL" ]] && needs_refresh=0
-fi
+claude_cli="$(resolve_claude_cli)" || exit 1
 
-stale=0
-if [[ "$needs_refresh" == "1" ]]; then
-  fetch_fresh || stale=1
-fi
-
-[[ -f "$CACHE_FILE" ]] || exit 0
-
-python3 - "$CACHE_FILE" "$TIME_FORMAT" "$stale" <<'PY'
-import json, os, sys, datetime
-path, fmt, stale_flag = sys.argv[1], sys.argv[2], sys.argv[3]
-try:
-    with open(path) as f:
-        data = json.load(f)
-except Exception:
-    sys.exit(0)
-
-# Backward-compat: cache may be wrapped {label, usage} or raw API JSON.
-usage = data.get("usage", data)
-
-color_on = "NO_COLOR" not in os.environ
-
-def remaining(w):
-    if not w or w.get("utilization") is None:
-        return None
-    return max(0, min(100, 100 - int(round(w["utilization"]))))
-
-def color(p):
-    if not color_on or p is None:
-        return ""
-    if p <= 0:   return "\x1b[38;2;99;119;119m"
-    if p >= 80:  return "\x1b[38;2;127;219;202m"
-    if p >= 60:  return "\x1b[38;2;173;219;103m"
-    if p >= 40:  return "\x1b[38;2;236;196;141m"
-    if p >= 20:  return "\x1b[38;2;247;140;108m"
-    return "\x1b[38;2;240;113;120m"
-
-RESET = "\x1b[0m" if color_on else ""
-
-def token(prefix, p):
-    return f"{color(p)}{prefix}:{p}%{RESET}"
-
-def fmt_reset(w):
-    if not w or not w.get("resets_at"):
-        return "?"
-    try:
-        d = datetime.datetime.fromisoformat(w["resets_at"]).astimezone()
-        return d.strftime(fmt)
-    except Exception:
-        return "?"
-
-h5 = remaining(usage.get("five_hour"))
-h7 = remaining(usage.get("seven_day"))
-if h5 is None and h7 is None:
-    sys.exit(0)
-
-parts = []
-if h5 is not None:
-    parts.append(token("5h", h5))
-if h7 is not None:
-    parts.append(token("W", h7))
-parts.append(fmt_reset(usage.get("seven_day")))
-
-suffix = ""
-if stale_flag == "1":
-    raw = os.environ.get("CLAUDE_PROMPT_STALE_SUFFIX", " (stale)")
-    if raw and color_on:
-        suffix = f"\x1b[2m{raw}{RESET}"
-    else:
-        suffix = raw
-
-print(" ".join(parts) + suffix)
-PY
+case "${1-}" in
+  --is-enabled|check)
+    exec "$claude_cli" prompt-segment check
+    ;;
+  --status|status)
+    shift
+    exec "$claude_cli" prompt-segment status "$@"
+    ;;
+  *)
+    exec "$claude_cli" prompt-segment "$@"
+    ;;
+esac

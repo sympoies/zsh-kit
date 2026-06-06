@@ -95,4 +95,4 @@ for plugin_entry in "${ZSH_PLUGINS[@]}"; do
 done
 
 # auto-updating Zsh plugins
-plugin_maybe_auto_update
+plugin_maybe_auto_update || true

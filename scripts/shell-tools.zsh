@@ -72,33 +72,47 @@ fdd() {
 # Process helpers
 # ────────────────────────────────────────────────────────
 
-# _su_kill_do <signal> <pid...>
-# Validate and send a signal to one or more PIDs (deduped).
-# Usage: _su_kill_do <signal> <pid...>
-_su_kill_do() {
+# _zsh_shell_tools_fzf_cli
+# Resolve the nils-cli `fzf-cli` binary for shell-tools wrappers.
+# Usage: _zsh_shell_tools_fzf_cli
+# Env:
+# - ZSH_SHELL_TOOLS_FZF_CLI: test/local override for a specific executable.
+_zsh_shell_tools_fzf_cli() {
   emulate -L zsh
-  setopt err_return
+  setopt pipe_fail nounset
 
-  typeset -i signal=0
-  signal=${1:-15}
-  shift
-
-  typeset -a pids=()
-  pids=($@)
-  # Deduplicate numeric PIDs only
-  typeset -a filtered=()
-  local pid=''
-  for pid in ${pids[@]}; do
-    [[ "$pid" == <-> ]] && filtered+=("$pid")
-  done
-  filtered=(${(u)filtered})
-
-  if (( ${#filtered} == 0 )); then
-    print -r -- "ℹ️  No valid PIDs provided"
-    return 2
+  if [[ -n "${ZSH_SHELL_TOOLS_FZF_CLI-}" ]]; then
+    if [[ ! -x "$ZSH_SHELL_TOOLS_FZF_CLI" ]]; then
+      print -u2 -r -- "❌ ZSH_SHELL_TOOLS_FZF_CLI is not executable: $ZSH_SHELL_TOOLS_FZF_CLI"
+      return 1
+    fi
+    print -r -- "$ZSH_SHELL_TOOLS_FZF_CLI"
+    return 0
   fi
 
-  kill -${signal} -- ${^filtered}
+  typeset local_bin="$HOME/.local/nils-cli/bin/fzf-cli"
+  if [[ -x "$local_bin" ]]; then
+    print -r -- "$local_bin"
+    return 0
+  fi
+
+  command -v fzf-cli 2>/dev/null
+}
+
+# _zsh_shell_tools_fzf_cli_exec [args...]
+# Execute the resolved native `fzf-cli`.
+# Usage: _zsh_shell_tools_fzf_cli_exec [args...]
+_zsh_shell_tools_fzf_cli_exec() {
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  typeset bin=''
+  bin="$(_zsh_shell_tools_fzf_cli)" || {
+    print -u2 -r -- "❌ fzf-cli not found; install nils-cli or set ZSH_SHELL_TOOLS_FZF_CLI."
+    return 127
+  }
+
+  "$bin" "$@"
 }
 
 # kill-port [-9] <port>
@@ -107,40 +121,14 @@ _su_kill_do() {
 # Options:
 # - -9: send SIGKILL (9) instead of SIGTERM (15).
 # Notes:
-# - Uses `lsof` to resolve PIDs (TCP LISTEN + UDP).
+# - Delegates behavior to `fzf-cli kill-port`; this function is shell glue.
 # Safety:
 # - Killing processes may interrupt services and cause data loss.
 kill-port() {
   emulate -L zsh
-  setopt pipe_fail
+  setopt pipe_fail err_return
 
-  typeset -i signal=15
-  if [[ "$1" == "-9" ]]; then
-    signal=9
-    shift
-  fi
-
-  typeset port="$1"
-  if [[ -z "$port" || ! $port == <-> ]]; then
-    print -u2 -r -- "Usage: kill-port [-9] <port>"
-    return 2
-  fi
-
-  typeset -a pids=()
-  # TCP listeners
-  pids+=(${(f)$(lsof -nP -iTCP:$port -sTCP:LISTEN -t 2>/dev/null)})
-  # UDP consumers (no LISTEN state for UDP)
-  pids+=(${(f)$(lsof -nP -iUDP:$port -t 2>/dev/null)})
-  # unique
-  pids=(${(u)pids})
-
-  if (( ${#pids} == 0 )); then
-    print -r -- "ℹ️  No process found on port $port"
-    return 0
-  fi
-
-  print -r -- "☠️  Killing (SIG${signal}) PIDs on port $port: ${pids[*]}"
-  _su_kill_do ${signal} ${^pids}
+  _zsh_shell_tools_fzf_cli_exec kill-port "$@"
 }
 
 # kp: Alias of kill-port.
@@ -156,33 +144,9 @@ alias kp='kill-port'
 # - Killing processes may interrupt services and cause data loss.
 kill-process() {
   emulate -L zsh
-  setopt pipe_fail
+  setopt pipe_fail err_return
 
-  typeset -i signal=15
-  if [[ "$1" == "-9" ]]; then
-    signal=9
-    shift
-  fi
-
-  if (( $# < 1 )); then
-    print -u2 -r -- "Usage: kill-process [-9] <pid> [pid...]"
-    return 2
-  fi
-
-  typeset -a pids=()
-  typeset pid=''
-  for pid in "$@"; do
-    if [[ "$pid" == <-> ]]; then
-      pids+=("$pid")
-    else
-      print -u2 -r -- "❌ Invalid PID: $pid"
-      return 2
-    fi
-  done
-
-  # Execute kill with shared helper
-  print -r -- "☠️  Killing (SIG${signal}) PID(s): ${pids[*]}"
-  _su_kill_do ${signal} ${^pids}
+  _zsh_shell_tools_fzf_cli_exec kill-process "$@"
 }
 
 # kpid: Alias of kill-process.
@@ -275,10 +239,10 @@ edit-zsh() {
 }
 
 # open-changed-files
-# Open changed files in VS Code (delegates to tools/open-changed-files.zsh).
+# Open changed files in VS Code (delegates to fzf-cli through a compatibility wrapper).
 # Usage: open-changed-files [--git] [--dry-run] [files...]
 # Notes:
-# - Replaces the retired cached CLI wrapper; same tool, function entrypoint.
+# - Keeps the historical zsh-kit entrypoint; nils-cli owns the CLI behavior.
 open-changed-files() {
   emulate -L zsh
   setopt err_return

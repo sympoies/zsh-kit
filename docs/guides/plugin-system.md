@@ -1,7 +1,7 @@
 # 🧩 Plugin System: `plugins.zsh` + `plugin_fetcher.zsh`
 
 This Zsh environment implements a **manual plugin loader system**
-with structured declarations and Git-based fetching — offering full control without external plugin managers.
+with structured declarations and native nils-cli Git fetching — offering full control without external plugin managers.
 
 ---
 
@@ -9,7 +9,7 @@ with structured declarations and Git-based fetching — offering full control wi
 
 - ✅ No external plugin managers (like Oh-My-Zsh, Antibody, Antidote)
 - ✅ Exact control over plugin order, configuration, and versioning
-- ✅ Git-aware fetcher with dry-run, force, and auto-update support
+- ✅ Git-aware fetch/update/status behavior delegated to `zsh-kit plugin`
 - ✅ Machine-agnostic and bootstrap-friendly with a clean `plugins.list`
 
 Plugins are stored under:
@@ -54,11 +54,12 @@ zsh-abbr::zsh-abbr.plugin.zsh::abbr::git=https://github.com/olets/zsh-abbr.git
 
 ## 🔄 Git Fetching & Updates
 
-Plugins are automatically cloned if not present. The fetch logic supports:
+Plugins are automatically cloned if not present. The zsh layer calls the native
+`nils-cli` `zsh-kit plugin` subcommands for fetch/update/status behavior:
 
 - 🔍 Dry-run mode (`PLUGIN_FETCH_DRY_RUN_ENABLED=true`)
 - 💥 Forced re-clone (`PLUGIN_FETCH_FORCE_ENABLED=true`)
-- 📆 Automatic update every 30 days (tracked in `$ZSH_CACHE_DIR/plugin.timestamp`)
+- 📆 Automatic update every 7 days (tracked in `$ZSH_CACHE_DIR/plugin.timestamp`)
 
 To manually update:
 
@@ -78,7 +79,7 @@ plugin_print_status
 
 Each entry is parsed and loaded via `load_plugin_entry`, which:
 
-- Clones the plugin if missing (via `plugin_fetch_if_missing_from_entry`)
+- Clones the plugin if missing (via `plugin_fetch_if_missing_from_entry`, which delegates to `zsh-kit plugin fetch`)
 - Loads the main plugin file (or default)
 - Applies optional `extra` setup (e.g., env vars, `fpath`, loader hooks)
 
@@ -92,7 +93,7 @@ Special-case logic (e.g., `abbr`) is hardcoded for known plugins needing extra s
 .zsh/
 ├── bootstrap/
 │   ├── plugins.zsh             # Main loader
-│   └── plugin_fetcher.zsh      # Git-aware fetch logic
+│   └── plugin_fetcher.zsh      # Shell wrapper around `zsh-kit plugin`
 └── config/
     ├── plugins.list            # Active plugin declarations
     └── .plugins.list.example   # Documented example template

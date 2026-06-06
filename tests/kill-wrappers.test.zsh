@@ -5,8 +5,7 @@ setopt pipe_fail nounset
 typeset -gr SCRIPT_PATH="${0:A}"
 typeset -gr TEST_DIR="${SCRIPT_PATH:h}"
 typeset -gr REPO_ROOT="${TEST_DIR:h}"
-typeset -gr TOOL_SCRIPT="$REPO_ROOT/tools/open-changed-files.zsh"
-typeset -gr ZSH_BIN="$(command -v zsh)"
+typeset -gr SHELL_TOOLS_SCRIPT="$REPO_ROOT/scripts/shell-tools.zsh"
 
 fail() {
   emulate -L zsh
@@ -44,7 +43,7 @@ assert_contains() {
 }
 
 typeset tmp_dir=''
-tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t open-changed-files-test.XXXXXX)" || fail "mktemp failed"
+tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t kill-wrappers-test.XXXXXX)" || fail "mktemp failed"
 
 {
   typeset stub="$tmp_dir/fzf-cli"
@@ -61,17 +60,25 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t open-changed-files-test.XXXXXX)
 
   typeset output='' rc=0 logged=''
 
-  output="$(OPEN_CHANGED_FILES_FZF_CLI="$stub" FZF_CLI_STUB_LOG="$log" "$ZSH_BIN" -f -- "$TOOL_SCRIPT" --git --dry-run 2>&1)"
+  output="$(ZSH_SHELL_TOOLS_FZF_CLI="$stub" FZF_CLI_STUB_LOG="$log" zsh -f -c "source '$SHELL_TOOLS_SCRIPT'; kill-port -9 1234" 2>&1)"
   rc=$?
   logged="$(command cat -- "$log")"
-  assert_eq 0 "$rc" "wrapper dispatch should exit 0" || fail "$output"
-  assert_eq "stub:open-changed-files --git --dry-run" "$output" "wrapper dispatch stdout" || fail "$output"
-  assert_eq "open-changed-files --git --dry-run" "$logged" "wrapper dispatch argv" || fail "$logged"
+  assert_eq 0 "$rc" "kill-port wrapper exits 0" || fail "$output"
+  assert_eq "stub:kill-port -9 1234" "$output" "kill-port dispatch stdout" || fail "$output"
+  assert_eq "kill-port -9 1234" "$logged" "kill-port dispatch argv" || fail "$logged"
 
-  output="$(OPEN_CHANGED_FILES_FZF_CLI="$tmp_dir/missing" "$ZSH_BIN" -f -- "$TOOL_SCRIPT" 2>&1)"
+  : >| "$log"
+  output="$(ZSH_SHELL_TOOLS_FZF_CLI="$stub" FZF_CLI_STUB_LOG="$log" zsh -f -c "source '$SHELL_TOOLS_SCRIPT'; kill-process 123 456" 2>&1)"
   rc=$?
-  assert_eq 127 "$rc" "missing override should return 127" || fail "$output"
-  assert_contains "$output" "OPEN_CHANGED_FILES_FZF_CLI is not executable:" "missing override should explain" || fail "$output"
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "kill-process wrapper exits 0" || fail "$output"
+  assert_eq "stub:kill-process 123 456" "$output" "kill-process dispatch stdout" || fail "$output"
+  assert_eq "kill-process 123 456" "$logged" "kill-process dispatch argv" || fail "$logged"
+
+  output="$(ZSH_SHELL_TOOLS_FZF_CLI="$tmp_dir/missing" zsh -f -c "source '$SHELL_TOOLS_SCRIPT'; kill-port 1234" 2>&1)"
+  rc=$?
+  assert_eq 127 "$rc" "missing override exits 127" || fail "$output"
+  assert_contains "$output" "ZSH_SHELL_TOOLS_FZF_CLI is not executable:" "missing override explains" || fail "$output"
 
   print -r -- "OK"
 } always {

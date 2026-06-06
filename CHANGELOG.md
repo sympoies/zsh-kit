@@ -3,6 +3,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- `docker-tools` container/compose/run helpers now delegate to the native nils-cli
+  `docker-tools` binary; zsh-kit keeps shell wrappers and `docker-aliases` alias mutation.
+- Plugin fetch/update/status helpers now delegate to native nils-cli `zsh-kit plugin`
+  subcommands; zsh-kit keeps plugin list loading, `source`, and `fpath` glue.
+- `opencode-tools` prompt helpers now delegate to native nils-cli `opencode-cli`
+  agent subcommands; zsh-kit keeps feature loading, aliases, and compatibility dispatch.
+- `kill-port` and `kill-process` now delegate to native nils-cli `fzf-cli kill-*`
+  subcommands; zsh-kit keeps the historical function names and aliases.
+- Plugin dry-run startup stays quiet when the native `zsh-kit` binary is not installed,
+  preserving CI smoke-load behavior while direct wrapper misuse still reports errors.
+- `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
+  only for the historical shell function, alias, and compatibility wrapper.
+
 ## v2.3.0 - 2026-06-04
 
 ### Changed

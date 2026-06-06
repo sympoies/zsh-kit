@@ -14,6 +14,93 @@ PLUGIN_UPDATE_FILE="$ZSH_CACHE_DIR/plugin.timestamp"
 # derive from this value so they can never drift apart.
 typeset -gi PLUGIN_UPDATE_INTERVAL_DAYS="${PLUGIN_UPDATE_INTERVAL_DAYS:-7}"
 
+# _zsh_plugin_quiet_missing_cli
+# Return whether dry-run startup should suppress missing native CLI noise.
+# Usage: _zsh_plugin_quiet_missing_cli
+# Env:
+# - PLUGIN_FETCH_DRY_RUN_ENABLED: suppress missing CLI errors when truthy.
+_zsh_plugin_quiet_missing_cli() {
+  emulate -L zsh
+  setopt pipe_fail nounset
+
+  case "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" in
+    1|true|TRUE|yes|YES|y|Y|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# _zsh_plugin_cli
+# Resolve the native nils-cli zsh-kit binary used for plugin helpers.
+# Usage: _zsh_plugin_cli
+# Env:
+# - ZSH_KIT_PLUGIN_CLI: executable override for tests or local development.
+_zsh_plugin_cli() {
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  typeset override="${ZSH_KIT_PLUGIN_CLI-}"
+  if [[ -n "$override" ]]; then
+    if [[ ! -x "$override" ]]; then
+      print -u2 -r -- "plugin_fetcher: ZSH_KIT_PLUGIN_CLI is not executable: $override"
+      return 127
+    fi
+    print -r -- "$override"
+    return 0
+  fi
+
+  typeset candidate="$HOME/.local/nils-cli/bin/zsh-kit"
+  if [[ -x "$candidate" ]]; then
+    print -r -- "$candidate"
+    return 0
+  fi
+
+  candidate="$(whence -p zsh-kit 2>/dev/null || true)"
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    print -r -- "$candidate"
+    return 0
+  fi
+
+  if _zsh_plugin_quiet_missing_cli; then
+    return 127
+  fi
+
+  print -u2 -r -- "plugin_fetcher: zsh-kit binary not found (install nils-cli or set ZSH_KIT_PLUGIN_CLI)"
+  return 127
+}
+
+# _zsh_plugin_cli_exec [args...]
+# Execute the resolved nils-cli zsh-kit binary.
+# Usage: _zsh_plugin_cli_exec [args...]
+_zsh_plugin_cli_exec() {
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  typeset bin=''
+  bin="$(_zsh_plugin_cli)" || return $?
+  command -- "$bin" "$@"
+}
+
+# _zsh_plugin_is_true <value> <name>
+# Test a plugin boolean env value.
+# Usage: _zsh_plugin_is_true <value> <name>
+_zsh_plugin_is_true() {
+  emulate -L zsh
+  setopt pipe_fail nounset
+
+  typeset value="${1-}"
+  typeset name="${2-boolean}"
+
+  if (( $+functions[zsh_env::is_true] )); then
+    zsh_env::is_true "$value" "$name"
+    return $?
+  fi
+
+  case "${value:l}" in
+    1|true|yes|y|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # plugin_fetch_if_missing_from_entry <entry>
 # Ensure the plugin referenced by a `config/plugins.list` entry exists under $ZSH_PLUGINS_DIR.
 # Usage: plugin_fetch_if_missing_from_entry <entry>
@@ -24,59 +111,20 @@ typeset -gi PLUGIN_UPDATE_INTERVAL_DAYS="${PLUGIN_UPDATE_INTERVAL_DAYS:-7}"
 # Safety:
 # - When PLUGIN_FETCH_FORCE_ENABLED=true and PLUGIN_FETCH_DRY_RUN_ENABLED=false, this removes the plugin directory.
 plugin_fetch_if_missing_from_entry() {
-  typeset entry="$1"
-  typeset -a parts=()
-  typeset plugin_name='' git_url=''
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
 
-  parts=("${(@s/::/)entry}")
-  plugin_name="${parts[1]}"
-  plugin_name="${plugin_name#"${plugin_name%%[![:space:]]*}"}"
-  plugin_name="${plugin_name%"${plugin_name##*[![:space:]]}"}"
-  if [[ -z "$plugin_name" || "$plugin_name" == '.' || "$plugin_name" == '..' || "$plugin_name" == *[^A-Za-z0-9._-]* ]]; then
-    print -u2 -r -- "plugin_fetch_if_missing_from_entry: invalid plugin id in entry: ${entry:-<empty>}"
-    return 1
+  typeset entry="${1-}"
+  typeset -a args=(plugin fetch --entry "$entry" --plugins-dir "$ZSH_PLUGINS_DIR")
+
+  if _zsh_plugin_is_true "${PLUGIN_FETCH_FORCE_ENABLED-}" "PLUGIN_FETCH_FORCE_ENABLED"; then
+    args+=(--force)
+  fi
+  if _zsh_plugin_is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
+    args+=(--dry-run)
   fi
 
-  for part in "${parts[@]:2}"; do
-    if [[ "$part" == git=* ]]; then
-      git_url="${part#git=}"
-    fi
-  done
-
-  typeset plugin_path="$ZSH_PLUGINS_DIR/$plugin_name"
-
-  if (( $+functions[zsh_env::is_true] )) \
-      && zsh_env::is_true "${PLUGIN_FETCH_FORCE_ENABLED-}" "PLUGIN_FETCH_FORCE_ENABLED" \
-      && [[ -d "$plugin_path" ]]; then
-    printf "💥 Forcing re-clone: %s\n" "$plugin_name"
-    if (( ! $+functions[zsh_env::is_true] )) || ! zsh_env::is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
-      rm -rf "$plugin_path"
-    fi
-  fi
-
-  if [[ -d "$plugin_path" ]]; then
-    return 0
-  fi
-
-  if [[ -n "$git_url" ]]; then
-    printf "🌐 Cloning %s from %s\n" "$plugin_name" "$git_url"
-    if (( ! $+functions[zsh_env::is_true] )) || ! zsh_env::is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
-      git clone "$git_url" "$plugin_path" || {
-        printf "❌ Failed to clone: %s\n" "$plugin_name"
-        return 1
-      }
-
-      if [[ -f "$plugin_path/.gitmodules" ]]; then
-        printf "🔗 Initializing submodules for %s\n" "$plugin_name"
-        git -C "$plugin_path" submodule update --init --recursive || {
-          printf "❌ Failed to init submodules for: %s\n" "$plugin_name"
-          return 1
-        }
-      fi
-    fi
-  else
-    printf "⚠️  No git URL defined for: %s\n" "$plugin_name"
-  fi
+  _zsh_plugin_cli_exec "${args[@]}"
 }
 
 # plugin_update_all
@@ -87,67 +135,37 @@ plugin_fetch_if_missing_from_entry() {
 # - PLUGIN_FETCH_DRY_RUN_ENABLED: when true, do not modify repos; print intended commands (default: false)
 plugin_update_all() {
   emulate -L zsh
-  setopt pipe_fail err_return nounset null_glob
+  setopt pipe_fail err_return nounset
 
-  typeset plugins_dir=''
-  typeset plugin_name='' before='' after='' short_after='' output=''
-  plugins_dir="$ZSH_PLUGINS_DIR"
-  [[ -d "$plugins_dir" ]] || return 0
+  typeset -a args=(plugin update --plugins-dir "$ZSH_PLUGINS_DIR")
+  if _zsh_plugin_is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
+    args+=(--dry-run)
+  fi
 
-  printf "🔄 Updating plugins in: %s\n\n" "$plugins_dir"
-  for dir in "$plugins_dir"/*(/N); do
-    [[ -d "$dir/.git" ]] || continue
-    plugin_name="${dir##*/}"
-    printf "🔧 Updating %s ...\n" "$plugin_name"
-
-    if (( $+functions[zsh_env::is_true] )) && zsh_env::is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
-      printf "    ↪ [dry-run] git -C %s pull --ff-only\n" "$dir"
-      continue
-    fi
-
-    before=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
-
-    if output=$(git -C "$dir" pull --ff-only 2>&1); then
-      after=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
-      short_after="${after:0:7}"
-      if [[ "$before" == "$after" ]]; then
-        if grep -q "Already up to date" <<< "$output"; then
-          printf "    ↪ Already up to date. (at %s)\n" "$short_after"
-        else
-          printf "%s\n" "$output" | sed 's/^/    ↪ /'
-        fi
-      else
-        printf "    ↪ Updated to %s\n" "$short_after"
-      fi
-    else
-      printf "%s\n" "$output" | sed 's/^/    ❌ /'
-      printf "    ❌ Failed to update %s\n" "$plugin_name"
-    fi
-	  done
+  _zsh_plugin_cli_exec "${args[@]}"
 }
 
 # plugin_maybe_auto_update
 # Auto-update plugins based on the timestamp in $PLUGIN_UPDATE_FILE.
 # Usage: plugin_maybe_auto_update
 # Notes:
-# - Calls plugin_update_all and writes a new timestamp when an update is performed.
+# - Delegates cadence checks, update, and timestamp writes to `zsh-kit plugin maybe-update`.
 # - Threshold: $PLUGIN_UPDATE_INTERVAL_DAYS (default 7 days).
 plugin_maybe_auto_update() {
-  typeset now_epoch='' last_epoch=''
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
 
-  now_epoch=$(date +%s)
-
-  if [[ -f "$PLUGIN_UPDATE_FILE" ]]; then
-    last_epoch=$(<"$PLUGIN_UPDATE_FILE")
-  else
-    last_epoch=0
+  typeset -a args=(
+    plugin maybe-update
+    --plugins-dir "$ZSH_PLUGINS_DIR"
+    --timestamp-file "$PLUGIN_UPDATE_FILE"
+    --interval-days "$PLUGIN_UPDATE_INTERVAL_DAYS"
+  )
+  if _zsh_plugin_is_true "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" "PLUGIN_FETCH_DRY_RUN_ENABLED"; then
+    args+=(--dry-run)
   fi
 
-  if (( now_epoch - last_epoch > PLUGIN_UPDATE_INTERVAL_DAYS * 86400 )); then
-    printf "📦 Auto-updating Zsh plugins (last update over %d days ago)...\n\n" "$PLUGIN_UPDATE_INTERVAL_DAYS"
-    plugin_update_all
-    printf "%s\n" "$now_epoch" > "$PLUGIN_UPDATE_FILE"
-	  fi
+  _zsh_plugin_cli_exec "${args[@]}"
 }
 
 # plugin_print_status
@@ -155,27 +173,10 @@ plugin_maybe_auto_update() {
 # Usage: plugin_print_status
 plugin_print_status() {
   emulate -L zsh
-  setopt pipe_fail
+  setopt pipe_fail err_return nounset
 
-  typeset now_epoch=0 last_epoch=0 days_ago=0 days_left=0
-  typeset last_date=''
-
-  if [[ ! -f "$PLUGIN_UPDATE_FILE" ]]; then
-    printf "📦 Plugin update status: never updated\n"
-    printf "⏱  Next auto-update expected: now\n"
-    return
-  fi
-
-  now_epoch=$(date +%s)
-  last_epoch=$(<"$PLUGIN_UPDATE_FILE")
-  days_ago=$(( (now_epoch - last_epoch) / 86400 ))
-  days_left=$(( PLUGIN_UPDATE_INTERVAL_DAYS - days_ago ))
-  last_date=$(date -j -f %s "$last_epoch" +"%Y-%m-%d" 2>/dev/null || date -d "@$last_epoch" +"%Y-%m-%d")
-
-  printf "📦 Plugin last updated: %s (%d days ago)\n" "$last_date" "$days_ago"
-  if (( days_left <= 0 )); then
-    printf "⏱  Next auto-update expected: now\n"
-  else
-    printf "⏱  Next auto-update expected in: %d days\n" "$days_left"
-  fi
+  _zsh_plugin_cli_exec \
+    plugin status \
+    --timestamp-file "$PLUGIN_UPDATE_FILE" \
+    --interval-days "$PLUGIN_UPDATE_INTERVAL_DAYS"
 }

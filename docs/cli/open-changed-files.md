@@ -13,11 +13,15 @@ This tool is intended to be used after an LLM edits files, so you can immediatel
 
 ## Entrypoint
 
-zsh-kit ships an `open-changed-files` shell function (alias: `ocf`) in `scripts/shell-tools.zsh`
-that delegates to `./tools/open-changed-files.zsh`.
+zsh-kit ships an `open-changed-files` shell function (alias: `ocf`) in `scripts/shell-tools.zsh`.
+The shell entrypoint delegates to `./tools/open-changed-files.zsh`, which is a compatibility
+wrapper for `fzf-cli open-changed-files`.
 
 Outside an interactive zsh-kit shell (scripts, subshells), call the script directly via
 `./tools/open-changed-files.zsh ...`.
+
+The CLI behavior is owned by nils-cli. zsh-kit keeps only the shell function, alias, and wrapper
+entrypoint.
 
 ## Behavior
 
@@ -61,3 +65,4 @@ open-changed-files [--list|--git] [--workspace-mode pwd|git] [--dry-run] [--verb
 - `OPEN_CHANGED_FILES_WORKSPACE_MODE`: `pwd` (default) or `git`
 - `OPEN_CHANGED_FILES_MAX_FILES`: max files to open (default: `5`)
 - `OPEN_CHANGED_FILES_CODE_PATH`: `auto` (default), `none` (force no-op), or a `code` path/name override
+- `OPEN_CHANGED_FILES_FZF_CLI`: optional zsh-kit wrapper override for the `fzf-cli` executable

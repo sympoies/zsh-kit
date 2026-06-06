@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
   agent subcommands; zsh-kit keeps feature loading, aliases, and compatibility dispatch.
 - `kill-port` and `kill-process` now delegate to native nils-cli `fzf-cli kill-*`
   subcommands; zsh-kit keeps the historical function names and aliases.
+- Plugin dry-run startup stays quiet when the native `zsh-kit` binary is not installed,
+  preserving CI smoke-load behavior while direct wrapper misuse still reports errors.
 - `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
   only for the historical shell function, alias, and compatibility wrapper.
 

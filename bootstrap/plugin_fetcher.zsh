@@ -14,6 +14,21 @@ PLUGIN_UPDATE_FILE="$ZSH_CACHE_DIR/plugin.timestamp"
 # derive from this value so they can never drift apart.
 typeset -gi PLUGIN_UPDATE_INTERVAL_DAYS="${PLUGIN_UPDATE_INTERVAL_DAYS:-7}"
 
+# _zsh_plugin_quiet_missing_cli
+# Return whether dry-run startup should suppress missing native CLI noise.
+# Usage: _zsh_plugin_quiet_missing_cli
+# Env:
+# - PLUGIN_FETCH_DRY_RUN_ENABLED: suppress missing CLI errors when truthy.
+_zsh_plugin_quiet_missing_cli() {
+  emulate -L zsh
+  setopt pipe_fail nounset
+
+  case "${PLUGIN_FETCH_DRY_RUN_ENABLED-}" in
+    1|true|TRUE|yes|YES|y|Y|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # _zsh_plugin_cli
 # Resolve the native nils-cli zsh-kit binary used for plugin helpers.
 # Usage: _zsh_plugin_cli
@@ -43,6 +58,10 @@ _zsh_plugin_cli() {
   if [[ -n "$candidate" && -x "$candidate" ]]; then
     print -r -- "$candidate"
     return 0
+  fi
+
+  if _zsh_plugin_quiet_missing_cli; then
+    return 127
   fi
 
   print -u2 -r -- "plugin_fetcher: zsh-kit binary not found (install nils-cli or set ZSH_KIT_PLUGIN_CLI)"

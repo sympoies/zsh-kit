@@ -2,8 +2,9 @@
 
 This feature is disabled by default. Enable it by including `opencode` in `ZSH_FEATURES` (e.g. in your home `~/.zshenv`).
 
-`scripts/_features/opencode/opencode-tools.zsh` adds an `opencode-tools` dispatcher plus `opencode-*` helpers that run
-shared prompt templates under `$ZDOTDIR/prompts`.
+`scripts/_features/opencode/opencode-tools.zsh` adds an `opencode-tools` dispatcher plus `opencode-*` helpers. These are
+compatibility wrappers around the native nils-cli `opencode-cli agent ...` commands; zsh-kit only keeps the feature gate, aliases, and
+legacy dispatcher behavior.
 
 ---
 
@@ -44,15 +45,8 @@ opencode-tools prompt "advice about X"
 
 ### `opencode-tools commit-with-scope [-p] [-a|--auto-stage] [extra prompt...]`
 
-Runs the `semantic-commit` skill and attaches any optional guidance you pass in.
- With `-a|--auto-stage`, runs `semantic-commit-autostage` instead.
-
-Fallback:
-
-- If `semantic-commit` skill is not installed (missing `$AGENTS_HOME/skills/tools/devex/semantic-commit/SKILL.md`),
-  the command falls back to a local interactive Conventional Commit flow (and `-p` still pushes).
-- If `-a|--auto-stage` is set but `semantic-commit-autostage` is not installed
-  (missing `$AGENTS_HOME/skills/automation/semantic-commit-autostage/SKILL.md`), the command errors.
+Delegates to `opencode-cli agent commit` and attaches any optional guidance you pass in. With `-a|--auto-stage`, the native CLI uses
+the `semantic-commit-autostage` prompt template instead of `semantic-commit-staged`.
 
 Options:
 
@@ -91,3 +85,4 @@ opencode-tools knowledge "What is a closure in programming?"
 | --- | --- | --- | --- |
 | `OPENCODE_CLI_MODEL` | (unset) | any `opencode run -m` value | Forwarded to `opencode run -m`. |
 | `OPENCODE_CLI_VARIANT` | (unset) | any `opencode run --variant` value | Forwarded to `opencode run --variant`. |
+| `OPENCODE_TOOLS_CLI` | (unset) | executable path | Override native `opencode-cli` resolution for tests or local development. |

@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
   `docker-tools` binary; zsh-kit keeps shell wrappers and `docker-aliases` alias mutation.
 - Plugin fetch/update/status helpers now delegate to native nils-cli `zsh-kit plugin`
   subcommands; zsh-kit keeps plugin list loading, `source`, and `fpath` glue.
+- `opencode-tools` prompt helpers now delegate to native nils-cli `opencode-cli`
+  agent subcommands; zsh-kit keeps feature loading, aliases, and compatibility dispatch.
 - `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
   only for the historical shell function, alias, and compatibility wrapper.
 

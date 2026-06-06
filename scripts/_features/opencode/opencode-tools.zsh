@@ -13,365 +13,84 @@ alias oc='opencode-tools'
 
 # opencode-tools: Prompt helpers (feature: opencode).
 #
-# Provides:
-# - `opencode-tools` (CLI dispatcher, alias `oc`)
+# Provides compatibility wrappers around native nils-cli `opencode-cli`:
+# - `opencode-tools` (dispatcher, alias `oc`)
 # - `opencode-commit-with-scope`
 # - `opencode-advice`
 # - `opencode-knowledge`
 
-# _opencode_tools_exec <prompt> [title]
-# Run opencode with the configured model/variant.
-_opencode_tools_exec() {
+# _opencode_tools_cli
+# Resolve the native nils-cli opencode-cli binary used by OpenCode helpers.
+# Usage: _opencode_tools_cli
+# Env:
+# - OPENCODE_TOOLS_CLI: executable override for tests or local development.
+_opencode_tools_cli() {
   emulate -L zsh
   setopt pipe_fail err_return nounset
 
-  if ! command -v opencode >/dev/null; then
-    print -u2 -r -- "opencode-tools: missing binary: opencode"
-    return 1
-  fi
-
-  local prompt="${1-}"
-  local title="${2-}"
-
-  if [[ -z "$prompt" ]]; then
-    print -u2 -r -- "_opencode_tools_exec: missing prompt"
-    return 1
-  fi
-
-  local -a cmd=(opencode run)
-
-  local model="${OPENCODE_CLI_MODEL-}"
-  if [[ -n "$model" ]]; then
-    cmd+=(-m "$model")
-  fi
-
-  local variant="${OPENCODE_CLI_VARIANT-}"
-  if [[ -n "$variant" ]]; then
-    cmd+=(--variant "$variant")
-  fi
-
-  if [[ -n "$title" ]]; then
-    cmd+=(--title "$title")
-  fi
-
-  cmd+=(-- "$prompt")
-  "${cmd[@]}"
-}
-
-# _opencode_tools_semantic_commit_prompt <mode>
-# Print the semantic-commit workflow prompt by reading a local prompt template.
-# Usage: _opencode_tools_semantic_commit_prompt <staged|autostage>
-_opencode_tools_semantic_commit_prompt() {
-  emulate -L zsh
-  setopt pipe_fail err_return nounset
-
-  local mode="${1-}"
-  local template_name=''
-  case "$mode" in
-    staged) template_name='semantic-commit-staged' ;;
-    autostage) template_name='semantic-commit-autostage' ;;
-    *)
-      print -u2 -r -- "_opencode_tools_semantic_commit_prompt: invalid mode: $mode"
-      return 1
-      ;;
-  esac
-
-  local prompts_dir=''
-  prompts_dir="$(_opencode_tools_prompts_dir)" || {
-    print -u2 -r -- "_opencode_tools_semantic_commit_prompt: prompts dir not found (expected: \$ZDOTDIR/prompts)"
-    return 1
-  }
-
-  local prompt_file="$prompts_dir/${template_name}.md"
-  if [[ ! -f "$prompt_file" ]]; then
-    print -u2 -r -- "_opencode_tools_semantic_commit_prompt: prompt template not found: $prompt_file"
-    return 1
-  fi
-
-  cat -- "$prompt_file" || return 1
-}
-
-# _opencode_tools_commit_with_scope_fallback <push_flag> [extra prompt...]
-# Local Conventional Commit fallback for when semantic-commit is unavailable.
-# Usage: _opencode_tools_commit_with_scope_fallback <push_flag> [extra prompt...]
-_opencode_tools_commit_with_scope_fallback() {
-  emulate -L zsh
-  setopt pipe_fail err_return nounset
-
-  typeset push_flag="${1-}"
-  shift || true
-  typeset extra_prompt="$*"
-
-  if ! command -v git >/dev/null; then
-    print -u2 -r -- "opencode-commit-with-scope: missing binary: git"
-    return 1
-  fi
-
-  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    print -u2 -r -- "opencode-commit-with-scope: not a git repository"
-    return 1
-  fi
-
-  typeset staged=''
-  staged="$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMRTUXBD 2>/dev/null || true)"
-  if [[ -z "$staged" ]]; then
-    print -u2 -r -- "opencode-commit-with-scope: no staged changes (stage files then retry)"
-    return 1
-  fi
-
-  print -u2 -r -- "opencode-commit-with-scope: semantic-commit not found on PATH (fallback mode)"
-
-  if [[ -n "$extra_prompt" ]]; then
-    print -u2 -r -- "opencode-commit-with-scope: note: extra prompt is ignored in fallback mode"
-  fi
-
-  if (( $+functions[git-scope] )) || command -v git-scope >/dev/null 2>&1; then
-    git-scope staged || true
-  else
-    print -r -- "Staged files:"
-    print -r -- "$staged"
-  fi
-
-  typeset -a files=("${(@f)staged}")
-  typeset -A top=()
-  typeset file='' part=''
-  for file in "${files[@]}"; do
-    [[ -n "$file" ]] || continue
-    if [[ "$file" == */* ]]; then
-      part="${file%%/*}"
-      top["$part"]=1
-    else
-      top['']=1
+  typeset override="${OPENCODE_TOOLS_CLI-}"
+  if [[ -n "$override" ]]; then
+    if [[ ! -x "$override" ]]; then
+      print -u2 -r -- "opencode-tools: OPENCODE_TOOLS_CLI is not executable: $override"
+      return 127
     fi
-  done
-
-  typeset suggested_scope=''
-  if (( ${#top[@]} == 1 )); then
-    for part in ${(k)top}; do
-      suggested_scope="$part"
-    done
-    [[ "$suggested_scope" == '' ]] && suggested_scope=''
-  elif (( ${#top[@]} == 2 )) && (( ${+top['']} )); then
-    for part in ${(k)top}; do
-      if [[ -n "$part" ]]; then
-        suggested_scope="$part"
-      fi
-    done
+    print -r -- "$override"
+    return 0
   fi
 
-  typeset commit_type=''
-  print -n -r -- "Type [chore]: "
-  IFS= read -r commit_type || return 1
-  commit_type="${commit_type:l}"
-  commit_type="${commit_type//[[:space:]]/}"
-  [[ -n "$commit_type" ]] || commit_type='chore'
-
-  typeset scope=''
-  if [[ -n "$suggested_scope" ]]; then
-    print -n -r -- "Scope (optional) [$suggested_scope]: "
-  else
-    print -n -r -- "Scope (optional): "
-  fi
-  IFS= read -r scope || return 1
-  scope="${scope//[[:space:]]/}"
-  [[ -n "$scope" ]] || scope="$suggested_scope"
-
-  typeset subject=''
-  while [[ -z "$subject" ]]; do
-    print -n -r -- "Subject: "
-    IFS= read -r subject || return 1
-    subject="${subject#"${subject%%[![:space:]]*}"}"
-    subject="${subject%"${subject##*[![:space:]]}"}"
-  done
-
-  typeset header=''
-  if [[ -n "$scope" ]]; then
-    header="${commit_type}(${scope}): ${subject}"
-  else
-    header="${commit_type}: ${subject}"
+  typeset candidate="$HOME/.local/nils-cli/bin/opencode-cli"
+  if [[ -x "$candidate" ]]; then
+    print -r -- "$candidate"
+    return 0
   fi
 
-  print -r -- ""
-  print -r -- "Commit message:"
-  print -r -- "  $header"
-  print -n -r -- "Proceed? [y/N] "
-  typeset confirm=''
-  IFS= read -r confirm || return 1
-  if [[ "$confirm" != [yY] ]]; then
-    print -u2 -r -- "Aborted."
-    return 1
+  candidate="$(whence -p opencode-cli 2>/dev/null || true)"
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    print -r -- "$candidate"
+    return 0
   fi
 
-  git commit -m "$header" || return 1
+  print -u2 -r -- "opencode-tools: opencode-cli binary not found (install nils-cli or set OPENCODE_TOOLS_CLI)"
+  return 127
+}
 
-  if [[ "$push_flag" == 'true' ]]; then
-    git push || return 1
-  fi
+# _opencode_tools_cli_exec [args...]
+# Execute the resolved native opencode-cli binary.
+# Usage: _opencode_tools_cli_exec [args...]
+_opencode_tools_cli_exec() {
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
 
-  if (( $+functions[git-scope] )) || command -v git-scope >/dev/null 2>&1; then
-    git-scope commit HEAD || true
-  else
-    git show -1 --name-status --oneline || true
-  fi
-
-  return 0
+  typeset bin=''
+  bin="$(_opencode_tools_cli)" || return $?
+  "$bin" "$@"
 }
 
 # opencode-commit-with-scope [-p|--push] [-a|--auto-stage] [extra prompt...]
-# Run a Semantic Commit workflow (rules embedded in prompt; no skill lookup).
-# Options:
-#   -p, --push    Push to remote after a successful commit.
-#   -a, --auto-stage  Autostage all changes before committing.
+# Run the native OpenCode semantic-commit workflow.
 opencode-commit-with-scope() {
   emulate -L zsh
   setopt pipe_fail err_return nounset
 
-  if ! zmodload zsh/zutil 2>/dev/null; then
-    print -u2 -r -- "❌ zsh/zutil is required for zparseopts."
-    return 1
-  fi
-
-  local -A opts=()
-  zparseopts -D -E -A opts -- p -push a -auto-stage || return 1
-
-  local push_flag='false'
-  if (( ${+opts[-p]} || ${+opts[--push]} )); then
-    push_flag='true'
-  fi
-
-  local auto_stage_flag='false'
-  if (( ${+opts[-a]} || ${+opts[--auto-stage]} )); then
-    auto_stage_flag='true'
-  fi
-
-  if ! command -v git >/dev/null; then
-    print -u2 -r -- "opencode-commit-with-scope: missing binary: git"
-    return 1
-  fi
-
-  local git_root=''
-  if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-    print -u2 -r -- "opencode-commit-with-scope: not a git repository"
-    return 1
-  fi
-
-  if [[ "$auto_stage_flag" == 'true' ]]; then
-    git -C "$git_root" add -A || return 1
-  else
-    local staged=''
-    staged="$(git -C "$git_root" -c core.quotepath=false diff --cached --name-only --diff-filter=ACMRTUXBD 2>/dev/null || true)"
-    if [[ -z "$staged" ]]; then
-      print -u2 -r -- "opencode-commit-with-scope: no staged changes (stage files then retry)"
-      return 1
-    fi
-  fi
-
-  local extra_prompt=''
-  if (( $# )); then
-    extra_prompt="$*"
-  fi
-
-  if ! command -v semantic-commit >/dev/null; then
-    _opencode_tools_commit_with_scope_fallback "$push_flag" "$extra_prompt"
-    return $?
-  fi
-
-  local prompt=''
-  if [[ "$auto_stage_flag" == 'true' ]]; then
-    prompt="$(_opencode_tools_semantic_commit_prompt autostage)" || return 1
-  else
-    prompt="$(_opencode_tools_semantic_commit_prompt staged)" || return 1
-  fi
-
-  if [[ "$push_flag" == 'true' ]]; then
-    prompt+=$'\n\nFurthermore, please push the committed changes to the remote repository.'
-  fi
-
-  if [[ -n "$extra_prompt" ]]; then
-    prompt+=$'\n\nAdditional instructions from user:\n'
-    prompt+="$extra_prompt"
-  fi
-
-  _opencode_tools_exec "$prompt" 'opencode-tools:commit-with-scope'
-}
-
-# _opencode_tools_prompts_dir
-# Print the prompts directory path.
-# Usage: _opencode_tools_prompts_dir
-_opencode_tools_prompts_dir() {
-  emulate -L zsh
-  setopt pipe_fail err_return nounset
-
-  typeset zdotdir="${ZDOTDIR-}"
-  if [[ -z "$zdotdir" ]]; then
-    typeset script_dir="${ZSH_SCRIPT_DIR-}"
-    if [[ -n "$script_dir" ]]; then
-      zdotdir="${script_dir:h}"
-    else
-      typeset home="${HOME-}"
-      [[ -n "$home" ]] || return 1
-      zdotdir="$home/.config/zsh"
-    fi
-  fi
-
-  typeset prompts_dir="$zdotdir/prompts"
-  [[ -d "$prompts_dir" ]] || return 1
-
-  print -r -- "$prompts_dir"
-  return 0
-}
-
-# _opencode_tools_run_prompt <template_name> [question...]
-# Run opencode with a prompt template and user question.
-_opencode_tools_run_prompt() {
-  emulate -L zsh
-  setopt pipe_fail err_return nounset
-
-  local template_name="${1-}"
-  shift
-  local user_query="$*"
-
-  if [[ -z "$user_query" ]]; then
-    print -n -r -- "Question: "
-    IFS= read -r user_query || return 1
-  fi
-
-  if [[ -z "$user_query" ]]; then
-    print -u2 -r -- "opencode-tools: missing question"
-    return 1
-  fi
-
-  local prompts_dir=''
-  prompts_dir="$(_opencode_tools_prompts_dir)" || {
-    print -u2 -r -- "opencode-tools: prompts dir not found (expected: \$ZDOTDIR/prompts)"
-    return 1
-  }
-
-  local prompt_file="$prompts_dir/${template_name}.md"
-  if [[ ! -f "$prompt_file" ]]; then
-    print -u2 -r -- "opencode-tools: prompt template not found: $prompt_file"
-    return 1
-  fi
-
-  local prompt_content=''
-  prompt_content=$(cat -- "$prompt_file")
-
-  # Replace $ARGUMENTS with user query
-  local final_prompt="${prompt_content//\$ARGUMENTS/$user_query}"
-
-  _opencode_tools_exec "$final_prompt" "opencode-tools:$template_name"
+  _opencode_tools_cli_exec agent commit "$@"
 }
 
 # opencode-advice [question...]
 # Run actionable-advice prompt.
 opencode-advice() {
-  _opencode_tools_run_prompt "actionable-advice" "$@"
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  _opencode_tools_cli_exec agent advice "$@"
 }
 
 # opencode-knowledge [question...]
 # Run actionable-knowledge prompt.
 opencode-knowledge() {
-  _opencode_tools_run_prompt "actionable-knowledge" "$@"
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  _opencode_tools_cli_exec agent knowledge "$@"
 }
 
 # _opencode_tools_usage [fd]
@@ -388,36 +107,22 @@ _opencode_tools_usage() {
   print -u"$fd" -r -- '  opencode-tools -- <prompt...>   (force prompt mode)'
   print -u"$fd" -r --
   print -u"$fd" -r -- 'Commands:'
-  print -u"$fd" -r -- '  prompt [prompt...]                             Run a raw prompt (useful when prompt starts with a command word)'
-  print -u"$fd" -r -- '  commit-with-scope [-p|--push] [-a|--auto-stage] [extra prompt...]  Run a semantic-commit workflow (rules embedded in prompt)'
-  print -u"$fd" -r -- '    -p, --push                                             Push to remote after commit'
-  print -u"$fd" -r -- '    -a, --auto-stage                             Autostage all changes before committing'
+  print -u"$fd" -r -- '  prompt [prompt...]                             Run a raw prompt'
+  print -u"$fd" -r -- '  commit-with-scope [-p|--push] [-a|--auto-stage] [extra prompt...]'
   print -u"$fd" -r -- '  advice [question]                              Get actionable engineering advice'
   print -u"$fd" -r -- '  knowledge [concept]                            Get clear explanation and angles for a concept'
   print -u"$fd" -r --
-  print -u"$fd" -r -- 'Config: OPENCODE_CLI_MODEL, OPENCODE_CLI_VARIANT'
+  print -u"$fd" -r -- 'Config: OPENCODE_CLI_MODEL, OPENCODE_CLI_VARIANT, OPENCODE_TOOLS_CLI'
   return 0
 }
 
 # _opencode_tools_run_raw_prompt [prompt...]
-# Run opencode with a raw prompt string.
+# Run a raw prompt through native opencode-cli.
 _opencode_tools_run_raw_prompt() {
   emulate -L zsh
   setopt pipe_fail err_return nounset
 
-  local user_prompt="$*"
-
-  if [[ -z "$user_prompt" ]]; then
-    print -n -r -- "Prompt: "
-    IFS= read -r user_prompt || return 1
-  fi
-
-  if [[ -z "$user_prompt" ]]; then
-    print -u2 -r -- "opencode-tools: missing prompt"
-    return 1
-  fi
-
-  _opencode_tools_exec "$user_prompt" 'opencode-tools:prompt'
+  _opencode_tools_cli_exec agent prompt "$@"
 }
 
 # opencode-tools <command> [args...]

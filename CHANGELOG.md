@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- `docker-tools` container/compose/run helpers now delegate to the native nils-cli
+  `docker-tools` binary; zsh-kit keeps shell wrappers and `docker-aliases` alias mutation.
 - `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
   only for the historical shell function, alias, and compatibility wrapper.
 

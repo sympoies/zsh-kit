@@ -1,8 +1,12 @@
 # 🐳 docker-tools: Docker Helper Router
 
-`docker-tools` is an opt-in feature (`ZSH_FEATURES=docker`) that adds:
+`docker-tools` is an opt-in feature (`ZSH_FEATURES=docker`) that adds shell
+wrappers around the native `nils-cli` `docker-tools` binary:
 
-- `docker-tools`: grouped helper CLI (container/compose/run/alias)
+- `docker-tools`: grouped helper router
+- `docker-container-sh`, `docker-container-zsh`, `docker-container-rm`
+- `docker-compose-down`
+- `docker-run-zsh`
 - `docker-aliases`: enable/disable multiple alias sets (base/omz/long)
 - cached completion for `docker` / `docker-compose` (loaded during `compinit`)
 
@@ -46,6 +50,15 @@ Compose command override (optional):
 export ZSH_DOCKER_COMPOSE_CMD="docker compose"   # or: docker-compose
 ```
 
+Delegated binary override (optional):
+
+```bash
+export ZSH_DOCKER_TOOLS_BIN="$HOME/.local/nils-cli/bin/docker-tools"
+```
+
+`container`, `compose`, and `run` behavior is owned by nils-cli. The zsh-kit
+layer keeps only wrapper dispatch and the shell-mutating `alias` group.
+
 ---
 
 ## Commands
@@ -84,4 +97,15 @@ Run an interactive container and exec into `zsh` (fallback `bash`/`sh`).
 ```bash
 docker-tools run zsh ubuntu:latest
 docker-tools run zsh --no-mount alpine:latest
+```
+
+### `docker-tools alias <command>`
+
+Alias management remains in zsh because it mutates the current shell.
+
+```bash
+docker-tools alias list
+docker-tools alias enable omz
+docker-tools alias disable long
+docker-tools alias status
 ```

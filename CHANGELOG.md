@@ -3,6 +3,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- `open-changed-files` now delegates to `fzf-cli open-changed-files`, leaving zsh-kit responsible
+  only for the historical shell function, alias, and compatibility wrapper.
+
 ## v2.3.0 - 2026-06-04
 
 ### Changed

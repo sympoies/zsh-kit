@@ -275,10 +275,10 @@ edit-zsh() {
 }
 
 # open-changed-files
-# Open changed files in VS Code (delegates to tools/open-changed-files.zsh).
+# Open changed files in VS Code (delegates to fzf-cli through a compatibility wrapper).
 # Usage: open-changed-files [--git] [--dry-run] [files...]
 # Notes:
-# - Replaces the retired cached CLI wrapper; same tool, function entrypoint.
+# - Keeps the historical zsh-kit entrypoint; nils-cli owns the CLI behavior.
 open-changed-files() {
   emulate -L zsh
   setopt err_return

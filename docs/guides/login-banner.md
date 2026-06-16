@@ -10,7 +10,8 @@ and a bit of mechanical sarcasm into each terminal startup — built entirely fr
 - 📜 Displays a **random inspirational quote** at login
 - 🧠 Shows a **dynamic emoji preamble** with a boot message (because shells deserve ceremony)
 - 🌦 (Optional) Prints a cached weather snapshot (`bootstrap/weather.zsh`, 1-hour TTL) when `ZSH_BOOT_WEATHER_ENABLED=true`;
-  prefers `weather-cli today --city $ZSH_WEATHER_CITY` (nils-cli) and falls back to wttr.in
+  prefers `weather-cli today --city $ZSH_WEATHER_CITY` (`nils-weather-cli` from `sympoies/nils-alfredworkflow`)
+  and falls back to wttr.in
 - 🌐 Fetches fresh quotes from a public API (`zenquotes.io`) in the background
 - 🗂 Stores up to 100 recent quotes locally in a text file for offline fallback
 - 🔒 Prevents duplicate execution when sourced multiple times
@@ -64,6 +65,19 @@ Need a silent login? Wrap `login.zsh` in a toggle and only load when `$SHOW_LOGI
 Need weather tweaks? Set `ZSH_WEATHER_CITY=Taipei` (enables the `weather-cli` source),
 `ZSH_WEATHER_URL='https://wttr.in/Taipei?0'` (wttr.in fallback), or `ZSH_WEATHER_INTERVAL=900` ahead of
 sourcing `.zshrc` to change location/refresh cadence.
+
+For a machine-local default, put the banner toggles and city in `~/.zshenv` or
+`$ZDOTDIR/.private/zshenv.zsh` so they are available before `.zshrc` sources the banner scripts:
+
+```zsh
+export ZSH_BOOT_WEATHER_ENABLED="${ZSH_BOOT_WEATHER_ENABLED:-true}"
+export ZSH_BOOT_QUOTE_ENABLED="${ZSH_BOOT_QUOTE_ENABLED:-true}"
+export ZSH_WEATHER_CITY="${ZSH_WEATHER_CITY:-Taipei}"
+```
+
+The quote banner rotates from `$ZDOTDIR/assets/quotes.txt`. If that file is missing or empty,
+the banner uses the hardcoded fallback quote until the background ZenQuotes fetch can append
+new entries. `jq` is required for that background refresh.
 
 ---
 

@@ -19,7 +19,7 @@ print_usage() {
   print -r -- "Checks (Inventory flags):"
   print -r -- "  - No legacy env names in tracked code/docs."
   print -r -- "  - No 0/1/yes/no/on/off assignments (only true|false allowed)."
-  print -r -- "  - .private/priv-env.zsh exports use only true|false (if file exists)."
+  print -r -- "  - .private/zshenv.zsh exports use only true|false (if file exists)."
   print -r --
   print -r -- "Examples:"
   print -r -- "  $SCRIPT_HINT --check"
@@ -220,14 +220,14 @@ check_no_forbidden_values() {
   return "$failed"
 }
 
-# check_private_exports <priv_env_file>
+# check_private_exports <private_env_file>
 # Ensure .private exports for Inventory flags use only true|false (if present).
 check_private_exports() {
   emulate -L zsh
   setopt pipe_fail err_return nounset
 
-  typeset priv_env_file="$1"
-  [[ -f "$priv_env_file" ]] || return 0
+  typeset private_env_file="$1"
+  [[ -f "$private_env_file" ]] || return 0
 
   typeset -a inventory_flags=(
     CODEX_ALLOW_DANGEROUS_ENABLED
@@ -260,11 +260,11 @@ check_private_exports() {
         if [[ "$lowered" != true && "$lowered" != false ]]; then
           failed=1
           print -u2 -r -- "❌ .private export must be true|false: ${flag}=${raw}"
-          print -u2 -r -- "$priv_env_file"
+          print -u2 -r -- "$private_env_file"
         fi
       fi
     done
-  done < "$priv_env_file"
+  done < "$private_env_file"
 
   return "$failed"
 }
@@ -296,8 +296,8 @@ main() {
   check_no_legacy_names "${files[@]}" || failed=1
   check_no_forbidden_values "${files[@]}" || failed=1
 
-  typeset priv_env_file="$root_dir/.private/priv-env.zsh"
-  check_private_exports "$priv_env_file" || failed=1
+  typeset private_env_file="$root_dir/.private/zshenv.zsh"
+  check_private_exports "$private_env_file" || failed=1
 
   if (( failed )); then
     return 1

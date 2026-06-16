@@ -70,6 +70,31 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
   assert_contains "$output" "install-tools skipped" "skip policy should not run installer" || fail "$output"
   [[ ! -e "$tmp_dir/home/.zshenv" ]] || fail "dry-run hook must not create home .zshenv"
 
+  typeset fake_bin="$tmp_dir/fake-bin"
+  mkdir -p -- "$fake_bin"
+  {
+    print -r -- '#!/usr/bin/env -S zsh -f'
+    print -r -- 'if [[ "${1-}" == print-config ]]; then'
+    print -r -- '  print -u2 -r -- "WARN - (starship::config): Error in '\''Custom'\'' at '\''unsafe_no_escape'\'': Unknown key"'
+    print -r -- '  exit 0'
+    print -r -- 'fi'
+    print -r -- 'exit 1'
+  } >| "$fake_bin/starship"
+  chmod 755 "$fake_bin/starship"
+
+  output="$(
+    HOME="$tmp_dir/home" \
+      ZSH_KIT_SETUP_STARSHIP_BIN="$fake_bin/starship" \
+      "$ZSH_BIN" -f -- "$HOOK_SCRIPT" \
+        --features docker \
+        --install-tools skip \
+        --dry-run \
+        2>&1
+  )"
+  rc=$?
+  assert_eq 1 "$rc" "old starship should fail setup validation" || fail "$output"
+  assert_contains "$output" "installed starship cannot parse config" "old starship output" || fail "$output"
+
   output="$(
     HOME="$tmp_dir/home" \
       "$ZSH_BIN" -f -- "$HOOK_SCRIPT" \

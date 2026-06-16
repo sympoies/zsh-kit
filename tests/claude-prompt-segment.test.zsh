@@ -43,6 +43,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
     print -r -- 'if [[ "${CLAUDE_STUB_LOG_ENV-}" == "1" ]]; then'
     print -r -- '  print -r -- "credentials=${CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON-}" >>| "${CLAUDE_STUB_LOG:?}"'
     print -r -- '  print -r -- "color=${CLAUDE_PROMPT_SEGMENT_COLOR_ENABLED-}" >>| "${CLAUDE_STUB_LOG:?}"'
+    print -r -- '  print -r -- "no_color=${NO_COLOR-}" >>| "${CLAUDE_STUB_LOG:?}"'
     print -r -- 'fi'
     print -r -- 'if [[ "${CLAUDE_STUB_RENDER_PERCENT-}" == "1" ]]; then'
     print -r -- '  print -r -- "5h:100% W:60% reset"'
@@ -54,7 +55,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
 
   typeset output='' rc=0 logged=''
 
-  output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --time-format=%Y 2>&1)"
+  output="$(NO_COLOR= CLAUDE_PROMPT_SEGMENT_ENABLED=true CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --time-format=%Y 2>&1)"
   rc=$?
   logged="$(command cat -- "$log")"
   assert_eq 0 "$rc" "render dispatch should exit 0" || fail "$output"
@@ -62,7 +63,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   assert_eq "prompt-segment --time-format=%Y" "$logged" "render dispatch argv" || fail "$logged"
 
   : >| "$log"
-  output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --is-enabled 2>&1)"
+  output="$(NO_COLOR= CLAUDE_PROMPT_SEGMENT_ENABLED=true CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --is-enabled 2>&1)"
   rc=$?
   logged="$(command cat -- "$log")"
   assert_eq 0 "$rc" "--is-enabled dispatch should exit 0" || fail "$output"
@@ -70,7 +71,23 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   assert_eq "prompt-segment check" "$logged" "--is-enabled dispatch argv" || fail "$logged"
 
   : >| "$log"
-  output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --status --format json 2>&1)"
+  output="$(NO_COLOR= CLAUDE_PROMPT_SEGMENT_ENABLED=false CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --is-enabled 2>&1)"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 1 "$rc" "--is-enabled should fail when disabled" || fail "$output"
+  assert_eq "" "$output" "--is-enabled disabled should be quiet" || fail "$output"
+  assert_eq "" "$logged" "--is-enabled disabled should not call CLI" || fail "$logged"
+
+  : >| "$log"
+  output="$(NO_COLOR= CLAUDE_PROMPT_SEGMENT_ENABLED=false CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --time-format=%Y 2>&1)"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "render should exit 0 when disabled" || fail "$output"
+  assert_eq "" "$output" "render disabled should be quiet" || fail "$output"
+  assert_eq "" "$logged" "render disabled should not call CLI" || fail "$logged"
+
+  : >| "$log"
+  output="$(NO_COLOR= CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" CLAUDE_STUB_LOG="$log" "$WRAPPER" --status --format json 2>&1)"
   rc=$?
   logged="$(command cat -- "$log")"
   assert_eq 0 "$rc" "--status dispatch should exit 0" || fail "$output"
@@ -84,6 +101,8 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   : >| "$log"
   output="$(
     HOME="$home" \
+      NO_COLOR= \
+      CLAUDE_PROMPT_SEGMENT_ENABLED=true \
       CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
       CLAUDE_STUB_LOG="$log" \
       CLAUDE_STUB_LOG_ENV=1 \
@@ -97,6 +116,8 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   : >| "$log"
   output="$(
     HOME="$home" \
+      NO_COLOR= \
+      CLAUDE_PROMPT_SEGMENT_ENABLED=true \
       CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
       CLAUDE_STUB_LOG="$log" \
       CLAUDE_STUB_LOG_ENV=1 \
@@ -108,7 +129,8 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   assert_eq 0 "$rc" "render with default credentials should exit 0" || fail "$output"
   assert_eq "5h:100%% W:60%% reset" "$output" "render should be zsh prompt escaped" || fail "$output"
   [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"token-123"}}'* ]] || fail "default credentials not loaded: $logged"
-  [[ "$logged" == *$'\ncolor=\n'* || "$logged" == *$'\ncolor=' ]] || fail "render should preserve CLI color default: $logged"
+  [[ "$logged" == *$'\ncolor=\n'* ]] || fail "render should preserve CLI color default: $logged"
+  [[ "$logged" == *$'\nno_color=\n'* || "$logged" == *$'\nno_color=' ]] || fail "render should preserve NO_COLOR default: $logged"
 
   output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$tmp_dir/missing" "$WRAPPER" 2>&1)"
   rc=$?

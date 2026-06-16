@@ -56,7 +56,8 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
       HISTFILE \
       CODEX_AUTH_FILE \
       CODEX_SECRET_DIR \
-      CODEX_PROMPT_SEGMENT_ENABLED
+      CODEX_PROMPT_SEGMENT_ENABLED \
+      CLAUDE_PROMPT_SEGMENT_ENABLED
     HOME="$1"
     source "$2"
     print -r -- "$ZDOTDIR"
@@ -66,6 +67,7 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
     print -r -- "$CODEX_AUTH_FILE"
     print -r -- "$CODEX_SECRET_DIR"
     print -r -- "$CODEX_PROMPT_SEGMENT_ENABLED"
+    print -r -- "$CLAUDE_PROMPT_SEGMENT_ENABLED"
     typeset bin_index="$path[(I)$ZDOTDIR/bin]"
     print -r -- "${path[$bin_index]-}"
   ' zsh "$tmp_home" "$EXPORTS_SCRIPT" 2>&1)"
@@ -73,8 +75,8 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
   assert_eq 0 "$rc" "sourcing paths.exports should exit 0" || fail "$output"
 
   typeset -a lines=("${(@f)output}")
-  if (( ${#lines[@]} < 8 )); then
-    fail "unexpected output (expected 8 lines): $output"
+  if (( ${#lines[@]} < 9 )); then
+    fail "unexpected output (expected 9 lines): $output"
   fi
 
   assert_eq "$expected_zdotdir" "${lines[1]}" "ZDOTDIR should default to HOME/.config/zsh" || fail "$output"
@@ -83,8 +85,9 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
   assert_eq "$expected_histfile" "${lines[4]}" "HISTFILE should default under cache dir" || fail "$output"
   assert_eq "$expected_auth_file" "${lines[5]}" "CODEX_AUTH_FILE should default to Codex CLI auth path" || fail "$output"
   assert_eq "$expected_secret_dir" "${lines[6]}" "CODEX_SECRET_DIR should default to local config secrets" || fail "$output"
-  assert_eq true "${lines[7]}" "Codex prompt segment should be enabled by zsh-kit" || fail "$output"
-  assert_eq "$expected_bin_dir" "${lines[8]}" "ZDOTDIR/bin should be on PATH for repo wrappers" || fail "$output"
+  assert_eq false "${lines[7]}" "Codex prompt segment should default to opt-in" || fail "$output"
+  assert_eq false "${lines[8]}" "Claude prompt segment should default to opt-in" || fail "$output"
+  assert_eq "$expected_bin_dir" "${lines[9]}" "ZDOTDIR/bin should be on PATH for repo wrappers" || fail "$output"
 
   print -r -- "OK"
 } always {

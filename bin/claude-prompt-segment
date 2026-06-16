@@ -35,6 +35,10 @@ load_default_credentials_json() {
   fi
 }
 
+prompt_segment_enabled() {
+  [[ "${CLAUDE_PROMPT_SEGMENT_ENABLED-}" == true ]]
+}
+
 escape_zsh_prompt_percent() {
   awk '
     {
@@ -57,6 +61,7 @@ escape_zsh_prompt_percent() {
 
 render_prompt_segment() {
   local output status
+  prompt_segment_enabled || return 0
   output="$("$claude_cli" prompt-segment "$@")"
   status=$?
   if [[ -n "$output" ]]; then
@@ -70,6 +75,7 @@ load_default_credentials_json
 
 case "${1-}" in
   --is-enabled|check)
+    prompt_segment_enabled || exit 1
     exec "$claude_cli" prompt-segment check
     ;;
   --status|status)

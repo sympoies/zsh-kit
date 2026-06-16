@@ -19,7 +19,8 @@ export HISTFILE="$ZSH_CACHE_DIR/.zsh_history"
 # material remains in the referenced auth/secret files.
 export CODEX_AUTH_FILE="${CODEX_AUTH_FILE:-$HOME/.codex/auth.json}"
 export CODEX_SECRET_DIR="${CODEX_SECRET_DIR:-$HOME/.config/codex_secrets}"
-export CODEX_PROMPT_SEGMENT_ENABLED="${CODEX_PROMPT_SEGMENT_ENABLED:-true}"
+export CODEX_PROMPT_SEGMENT_ENABLED="${CODEX_PROMPT_SEGMENT_ENABLED:-false}"
+export CLAUDE_PROMPT_SEGMENT_ENABLED="${CLAUDE_PROMPT_SEGMENT_ENABLED:-false}"
 
 # ──────────────────────────────
 # PATH

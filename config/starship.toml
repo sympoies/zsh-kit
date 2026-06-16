@@ -42,12 +42,14 @@ symbol = "🌟 "
 command = "codex-prompt-segment --time-format '%m-%d %H:%M'"
 when = "command -v codex-prompt-segment >/dev/null 2>&1 && codex-prompt-segment --is-enabled"
 format = "[$symbol$output ](bold #637777)"
+unsafe_no_escape = true
 
 [custom.claude_rate_limits]
 symbol = "🌀 "
 command = "claude-prompt-segment --time-format '%m-%d %H:%M'"
 when = "command -v claude-prompt-segment >/dev/null 2>&1 && claude-prompt-segment --is-enabled"
 format = "[$symbol$output ](bold #c792ea)"
+unsafe_no_escape = true
 
 [username]
 style_user = "bold #ffffff"

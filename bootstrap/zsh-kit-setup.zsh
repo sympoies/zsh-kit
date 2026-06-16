@@ -105,6 +105,15 @@ zsh_kit_setup::validate_bootstrap() {
     "$REPO_ROOT/.zshrc"
     "$REPO_ROOT/bootstrap/bootstrap.zsh"
     "$REPO_ROOT/scripts/_internal/paths.exports.zsh"
+    "$REPO_ROOT/config/starship.toml"
+    "$REPO_ROOT/bin/codex-prompt-segment"
+    "$REPO_ROOT/bin/claude-prompt-segment"
+  )
+  typeset -a zsh_syntax_files=(
+    "$REPO_ROOT/.zshenv"
+    "$REPO_ROOT/.zshrc"
+    "$REPO_ROOT/bootstrap/bootstrap.zsh"
+    "$REPO_ROOT/scripts/_internal/paths.exports.zsh"
   )
   typeset file=''
   for file in "${required[@]}"; do
@@ -112,8 +121,101 @@ zsh_kit_setup::validate_bootstrap() {
       print -u2 -r -- "zsh-kit setup: required bootstrap file missing: $file"
       return 1
     }
+  done
+  for file in "${zsh_syntax_files[@]}"; do
     zsh -n -- "$file" || return 1
   done
+}
+
+# zsh_kit_setup::starship_module_has_unsafe_no_escape <module> <config>
+# Return true when `starship print-config` reports unsafe_no_escape=true for a
+# custom module.
+# Usage: zsh_kit_setup::starship_module_has_unsafe_no_escape custom.name "$config"
+zsh_kit_setup::starship_module_has_unsafe_no_escape() {
+  emulate -L zsh
+  setopt pipe_fail nounset
+
+  typeset module="$1"
+  typeset config="$2"
+
+  awk -v header="[$module]" '
+    $0 == header { in_module = 1; next }
+    in_module && /^\[/ { exit(found ? 0 : 1) }
+    in_module && $0 == "unsafe_no_escape = true" { found = 1 }
+    END { exit(found ? 0 : 1) }
+  ' <<< "$config"
+}
+
+# zsh_kit_setup::validate_starship_prompt
+# Validate repo-owned Starship prompt wiring when Starship is installed.
+# Usage: zsh_kit_setup::validate_starship_prompt
+zsh_kit_setup::validate_starship_prompt() {
+  emulate -L zsh
+  setopt pipe_fail err_return nounset
+
+  typeset starship_config="$REPO_ROOT/config/starship.toml"
+  typeset codex_wrapper="$REPO_ROOT/bin/codex-prompt-segment"
+  typeset claude_wrapper="$REPO_ROOT/bin/claude-prompt-segment"
+  typeset starship_bin=''
+
+  [[ -r "$starship_config" ]] || {
+    print -u2 -r -- "zsh-kit setup: starship config missing: $starship_config"
+    return 1
+  }
+  [[ -x "$codex_wrapper" ]] || {
+    print -u2 -r -- "zsh-kit setup: Codex prompt wrapper is not executable: $codex_wrapper"
+    return 1
+  }
+  [[ -x "$claude_wrapper" ]] || {
+    print -u2 -r -- "zsh-kit setup: Claude prompt wrapper is not executable: $claude_wrapper"
+    return 1
+  }
+
+  if command -v bash >/dev/null 2>&1; then
+    bash -n -- "$codex_wrapper" || return 1
+    bash -n -- "$claude_wrapper" || return 1
+  fi
+
+  if [[ -n "${ZSH_KIT_SETUP_STARSHIP_BIN-}" ]]; then
+    starship_bin="$ZSH_KIT_SETUP_STARSHIP_BIN"
+    [[ -x "$starship_bin" ]] || {
+      print -u2 -r -- "zsh-kit setup: configured starship binary is not executable: $starship_bin"
+      return 1
+    }
+  else
+    starship_bin="$(command -v starship 2>/dev/null || true)"
+    [[ -n "$starship_bin" ]] || {
+      print -r -- "zsh-kit setup: starship config validation skipped (starship not installed)"
+      return 0
+    }
+  fi
+
+  typeset output='' rc=0
+  output="$(
+    TERM="${TERM:-xterm-256color}" \
+      STARSHIP_CONFIG="$starship_config" \
+      STARSHIP_SHELL=zsh \
+      "$starship_bin" print-config 2>&1
+  )" || rc=$?
+  if (( rc != 0 )); then
+    print -u2 -r -- "zsh-kit setup: starship config validation failed"
+    print -u2 -r -- "$output"
+    return "$rc"
+  fi
+  if [[ "$output" == *"Unknown key"* ]]; then
+    print -u2 -r -- "zsh-kit setup: installed starship cannot parse config; upgrade starship before using this setup"
+    print -u2 -r -- "$output"
+    return 1
+  fi
+
+  zsh_kit_setup::starship_module_has_unsafe_no_escape custom.codex_rate_limits "$output" || {
+    print -u2 -r -- "zsh-kit setup: custom.codex_rate_limits must set unsafe_no_escape = true"
+    return 1
+  }
+  zsh_kit_setup::starship_module_has_unsafe_no_escape custom.claude_rate_limits "$output" || {
+    print -u2 -r -- "zsh-kit setup: custom.claude_rate_limits must set unsafe_no_escape = true"
+    return 1
+  }
 }
 
 # zsh_kit_setup::run_tool_install <policy> <dry_run>
@@ -229,6 +331,7 @@ zsh_kit_setup::main() {
   export ZSH_FEATURES="$features_csv"
 
   zsh_kit_setup::validate_bootstrap || return $?
+  zsh_kit_setup::validate_starship_prompt || return $?
 
   print -r -- "zsh-kit setup: repository=$REPO_ROOT"
   if [[ -n "$features_csv" ]]; then

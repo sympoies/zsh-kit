@@ -72,10 +72,13 @@ What it does:
 - sources `scripts/_internal/paths.exports.zsh`
 - defines core `ZSH_*` directory exports (`ZSH_CACHE_DIR`, `ZSH_SCRIPT_DIR`, etc.)
 - defines `HISTFILE` under `cache/`
+- defines non-secret Codex helper defaults (`CODEX_AUTH_FILE`, `CODEX_SECRET_DIR`,
+  `CODEX_PROMPT_SEGMENT_ENABLED`)
 - sources `.private/zshenv.zsh` when present for machine-local env defaults
 - sets a minimal, deduplicated `PATH` (via `typeset -U path PATH`) including:
   - Homebrew (`/opt/homebrew/bin`, `/opt/homebrew/sbin`) when present
   - GNU “gnubin” shims (e.g. `coreutils` for `shuf`) when present
+  - first-party wrappers (`$ZDOTDIR/bin`)
   - user bins (`$HOME/bin`, `$HOME/.local/bin`)
 
 What does **not** belong here:

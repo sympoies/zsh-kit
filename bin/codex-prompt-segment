@@ -25,6 +25,36 @@ resolve_codex_cli() {
 
 codex_cli="$(resolve_codex_cli)" || exit 1
 
+escape_zsh_prompt_percent() {
+  awk '
+    {
+      out = ""
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        if (c == "%") {
+          out = out "%%"
+          if (substr($0, i + 1, 1) == "%") {
+            i++
+          }
+        } else {
+          out = out c
+        }
+      }
+      print out
+    }
+  '
+}
+
+render_prompt_segment() {
+  local output status
+  output="$(CODEX_PROMPT_SEGMENT_ZSH_ESCAPE_ENABLED=true "$codex_cli" prompt-segment "$@")"
+  status=$?
+  if [[ -n "$output" ]]; then
+    printf '%s\n' "$output" | escape_zsh_prompt_percent
+  fi
+  return "$status"
+}
+
 case "${1-}" in
   --is-enabled|check)
     exec "$codex_cli" prompt-segment check
@@ -34,6 +64,6 @@ case "${1-}" in
     exec "$codex_cli" prompt-segment status "$@"
     ;;
   *)
-    exec "$codex_cli" prompt-segment "$@"
+    render_prompt_segment "$@"
     ;;
 esac

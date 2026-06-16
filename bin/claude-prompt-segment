@@ -23,7 +23,50 @@ resolve_claude_cli() {
   command -v claude-cli 2>/dev/null
 }
 
+load_default_credentials_json() {
+  if [[ -n "${CLAUDE_PROMPT_SEGMENT_ACCESS_TOKEN-}" || -n "${CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON-}" ]]; then
+    return 0
+  fi
+
+  local credentials_json="$HOME/.claude/.credentials.json"
+  if [[ -r "$credentials_json" ]]; then
+    CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON="$(<"$credentials_json")"
+    export CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON
+  fi
+}
+
+escape_zsh_prompt_percent() {
+  awk '
+    {
+      out = ""
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        if (c == "%") {
+          out = out "%%"
+          if (substr($0, i + 1, 1) == "%") {
+            i++
+          }
+        } else {
+          out = out c
+        }
+      }
+      print out
+    }
+  '
+}
+
+render_prompt_segment() {
+  local output status
+  output="$("$claude_cli" prompt-segment "$@")"
+  status=$?
+  if [[ -n "$output" ]]; then
+    printf '%s\n' "$output" | escape_zsh_prompt_percent
+  fi
+  return "$status"
+}
+
 claude_cli="$(resolve_claude_cli)" || exit 1
+load_default_credentials_json
 
 case "${1-}" in
   --is-enabled|check)
@@ -34,6 +77,6 @@ case "${1-}" in
     exec "$claude_cli" prompt-segment status "$@"
     ;;
   *)
-    exec "$claude_cli" prompt-segment "$@"
+    render_prompt_segment "$@"
     ;;
 esac

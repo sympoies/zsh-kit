@@ -40,7 +40,15 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
     print -r -- '#!/usr/bin/env -S zsh -f'
     print -r -- 'setopt pipe_fail nounset'
     print -r -- 'print -r -- "${(j: :)argv}" >>| "${CLAUDE_STUB_LOG:?}"'
-    print -r -- 'print -r -- "stub:${(j: :)argv}"'
+    print -r -- 'if [[ "${CLAUDE_STUB_LOG_ENV-}" == "1" ]]; then'
+    print -r -- '  print -r -- "credentials=${CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON-}" >>| "${CLAUDE_STUB_LOG:?}"'
+    print -r -- '  print -r -- "color=${CLAUDE_PROMPT_SEGMENT_COLOR_ENABLED-}" >>| "${CLAUDE_STUB_LOG:?}"'
+    print -r -- 'fi'
+    print -r -- 'if [[ "${CLAUDE_STUB_RENDER_PERCENT-}" == "1" ]]; then'
+    print -r -- '  print -r -- "5h:100% W:60% reset"'
+    print -r -- 'else'
+    print -r -- '  print -r -- "stub:${(j: :)argv}"'
+    print -r -- 'fi'
   } >| "$stub"
   chmod 755 "$stub"
 
@@ -50,7 +58,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   rc=$?
   logged="$(command cat -- "$log")"
   assert_eq 0 "$rc" "render dispatch should exit 0" || fail "$output"
-  assert_eq "stub:prompt-segment --time-format=%Y" "$output" "render dispatch stdout" || fail "$output"
+  assert_eq "stub:prompt-segment --time-format=%%Y" "$output" "render dispatch stdout" || fail "$output"
   assert_eq "prompt-segment --time-format=%Y" "$logged" "render dispatch argv" || fail "$logged"
 
   : >| "$log"
@@ -68,6 +76,39 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   assert_eq 0 "$rc" "--status dispatch should exit 0" || fail "$output"
   assert_eq "stub:prompt-segment status --format json" "$output" "--status dispatch stdout" || fail "$output"
   assert_eq "prompt-segment status --format json" "$logged" "--status dispatch argv" || fail "$logged"
+
+  typeset home="$tmp_dir/home"
+  mkdir -p -- "$home/.claude"
+  print -r -- '{"claudeAiOauth":{"accessToken":"token-123"}}' >| "$home/.claude/.credentials.json"
+
+  : >| "$log"
+  output="$(
+    HOME="$home" \
+      CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
+      CLAUDE_STUB_LOG="$log" \
+      CLAUDE_STUB_LOG_ENV=1 \
+      "$WRAPPER" --is-enabled 2>&1
+  )"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "--is-enabled with default credentials should exit 0" || fail "$output"
+  [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"token-123"}}'* ]] || fail "default credentials not loaded: $logged"
+
+  : >| "$log"
+  output="$(
+    HOME="$home" \
+      CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
+      CLAUDE_STUB_LOG="$log" \
+      CLAUDE_STUB_LOG_ENV=1 \
+      CLAUDE_STUB_RENDER_PERCENT=1 \
+      "$WRAPPER" --time-format=%Y 2>&1
+  )"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "render with default credentials should exit 0" || fail "$output"
+  assert_eq "5h:100%% W:60%% reset" "$output" "render should be zsh prompt escaped" || fail "$output"
+  [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"token-123"}}'* ]] || fail "default credentials not loaded: $logged"
+  [[ "$logged" == *$'\ncolor=\n'* || "$logged" == *$'\ncolor=' ]] || fail "render should preserve CLI color default: $logged"
 
   output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$tmp_dir/missing" "$WRAPPER" 2>&1)"
   rc=$?

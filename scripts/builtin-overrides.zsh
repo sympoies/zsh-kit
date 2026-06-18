@@ -4,6 +4,7 @@
 #
 # This module intentionally overrides builtins/commands for interactive UX:
 # - cd: auto-list directory contents after changing directory
+# - ls: prefer eza (grid view); fall back to the real `ls`
 # - cat: prefer bat (plain output; no pager)
 # - history: run fzf-history when called with no args
 #
@@ -16,7 +17,7 @@
 # - Wrappers are designed to be "quiet" in non-interactive contexts.
 
 if command -v safe_unalias >/dev/null; then
-  safe_unalias cd cat history
+  safe_unalias cd ls cat history
 fi
 
 # cd [path]
@@ -49,6 +50,51 @@ cd() {
   fi
 
   return 0
+}
+
+# ls [ls/eza args...]
+# List directory contents (eza preferred; grid view).
+# Usage: ls [args...]
+# Notes:
+# - Builtin override for interactive UX. Mirrors the `cat` wrapper's guards:
+#   scripts, pipelines, command substitution, and explicit opt-out get the
+#   real `ls` so machine-parsed output stays stable.
+# - eza is tried only on an interactive TTY; if eza is absent or exits non-zero
+#   (e.g. an `ls` flag it does not accept) it falls back to the real `ls`.
+# - This is the short grid form; `ll` (eza -alh) remains the long listing.
+ls() {
+  emulate -L zsh
+
+  # Non-interactive shell (scripts): fall back to the real `ls`.
+  if [[ ! -o interactive ]]; then
+    command ls "$@"
+    return $?
+  fi
+
+  # Explicit opt-out: fall back to the real `ls`.
+  if (( ${+SHELL_UTILS_BUILTIN_OVERRIDES_ENABLED} )) \
+      && ! zsh_env::is_true "${SHELL_UTILS_BUILTIN_OVERRIDES_ENABLED-}" "SHELL_UTILS_BUILTIN_OVERRIDES_ENABLED"; then
+    command ls "$@"
+    return $?
+  fi
+
+  # Stdout not a TTY (pipeline / command substitution / completion preview):
+  # keep the real `ls` so callers get plain, parseable output.
+  if [[ ! -t 1 ]]; then
+    command ls "$@"
+    return $?
+  fi
+
+  # Interactive UX: prefer `eza`; fall back to the real `ls` if it is missing
+  # or exits non-zero (unsupported flag, bad path, etc.).
+  if command -v eza >/dev/null 2>&1; then
+    eza --icons --group-directories-first --time-style=iso "$@" && return 0
+    command ls "$@"
+    return $?
+  fi
+
+  # Final fallback.
+  command ls "$@"
 }
 
 # cat <path...>

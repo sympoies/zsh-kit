@@ -121,3 +121,6 @@ if [[ -t 1 ]] && zsh_env::is_true "${ZSH_BOOT_FEATURES_ENABLED-}" "ZSH_BOOT_FEAT
 
   print -r -- "$msg"
 fi
+
+# bun completions
+[ -s "/home/terry/.bun/_bun" ] && source "/home/terry/.bun/_bun"

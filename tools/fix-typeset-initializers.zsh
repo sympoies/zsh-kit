@@ -55,7 +55,8 @@ targets_from_root() {
   targets+=("$root_dir"/scripts/**/*.zsh(.N))
   targets+=("$root_dir"/tools/**/*.zsh(.N))
   targets+=("$root_dir"/tests/**/*.zsh(.N))
-  targets+=("$root_dir"/.private/**/*.zsh(.N))
+  # `.private/` is a separate, gitignored repo (the local-scripts overlay) and is
+  # intentionally not linted here, mirroring fix-typeset-empty-string-quotes.zsh.
 
   # Completion functions are often extension-less but still zsh.
   targets+=("$root_dir"/scripts/_completion/_*(.N))

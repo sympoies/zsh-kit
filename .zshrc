@@ -123,4 +123,6 @@ if [[ -t 1 ]] && zsh_env::is_true "${ZSH_BOOT_FEATURES_ENABLED-}" "ZSH_BOOT_FEAT
 fi
 
 # bun completions
-[ -s "/home/terry/.bun/_bun" ] && source "/home/terry/.bun/_bun"
+typeset bun_completion_file="$HOME/.bun/_bun"
+[[ ! -s "$bun_completion_file" ]] || source "$bun_completion_file"
+unset bun_completion_file

@@ -95,6 +95,34 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
   assert_eq 1 "$rc" "old starship should fail setup validation" || fail "$output"
   assert_contains "$output" "installed starship cannot parse config" "old starship output" || fail "$output"
 
+  typeset fake_linuxbrew_bin="$tmp_dir/home/.linuxbrew/bin"
+  mkdir -p -- "$fake_linuxbrew_bin"
+  {
+    print -r -- '#!/usr/bin/env -S zsh -f'
+    print -r -- 'if [[ "${1-}" == print-config ]]; then'
+    print -r -- '  print -r -- "[custom.codex_rate_limits]"'
+    print -r -- '  print -r -- "unsafe_no_escape = true"'
+    print -r -- '  print -r -- "[custom.claude_rate_limits]"'
+    print -r -- '  print -r -- "unsafe_no_escape = true"'
+    print -r -- '  exit 0'
+    print -r -- 'fi'
+    print -r -- 'exit 0'
+  } >| "$fake_linuxbrew_bin/starship"
+  chmod 755 "$fake_linuxbrew_bin/starship"
+
+  output="$(
+    HOME="$tmp_dir/home" \
+      "$ZSH_BIN" -f -- "$HOOK_SCRIPT" \
+        --features docker \
+        --install-tools skip \
+        --dry-run \
+        2>&1
+  )"
+  rc=$?
+  assert_eq 0 "$rc" "setup should prefer HOME Linuxbrew starship in non-login shells" || fail "$output"
+  assert_contains "$output" "zsh-kit setup: complete" "Linuxbrew starship output" || fail "$output"
+  rm -f -- "$fake_linuxbrew_bin/starship"
+
   output="$(
     HOME="$tmp_dir/home" \
       "$ZSH_BIN" -f -- "$HOOK_SCRIPT" \

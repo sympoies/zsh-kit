@@ -52,8 +52,10 @@ typeset -a _zsh_path_prepend=()
 # re-prepends /opt/homebrew/bin). Doing it here would be a no-op for
 # login shells, so keep the override centralised in `.zshrc`.
 
-# Homebrew (Apple Silicon)
+# Homebrew
 [[ -d /opt/homebrew/bin ]] && _zsh_path_prepend+=(/opt/homebrew/bin /opt/homebrew/sbin)
+[[ -d /home/linuxbrew/.linuxbrew/bin ]] && _zsh_path_prepend+=(/home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin)
+[[ -d "$HOME/.linuxbrew/bin" ]] && _zsh_path_prepend+=("$HOME/.linuxbrew/bin" "$HOME/.linuxbrew/sbin")
 
 # Rust (rustup)
 [[ -d "$HOME/.cargo/bin" ]] && _zsh_path_prepend+=("$HOME/.cargo/bin")

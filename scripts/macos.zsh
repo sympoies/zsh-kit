@@ -43,15 +43,6 @@ fi
 unset vscode_bin
 
 # ──────────────────────────────
-# 1Password SSH agent
-# ──────────────────────────────
-typeset onepassword_sock="$HOME/Library/Group Containers/3BUA8C4S2C.com.1password/t/agent.sock"
-if [[ -S "$onepassword_sock" ]]; then
-  export SSH_AUTH_SOCK="$onepassword_sock"
-fi
-unset onepassword_sock
-
-# ──────────────────────────────
 # Shell integration + session
 # ──────────────────────────────
 : "${SHELL_SESSIONS_DISABLE:=1}"

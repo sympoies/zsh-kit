@@ -103,6 +103,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
     HOME="$home" \
       NO_COLOR= \
       CLAUDE_PROMPT_SEGMENT_ENABLED=true \
+      CLAUDE_PROMPT_SEGMENT_OS=Linux \
       CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
       CLAUDE_STUB_LOG="$log" \
       CLAUDE_STUB_LOG_ENV=1 \
@@ -118,6 +119,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
     HOME="$home" \
       NO_COLOR= \
       CLAUDE_PROMPT_SEGMENT_ENABLED=true \
+      CLAUDE_PROMPT_SEGMENT_OS=Linux \
       CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
       CLAUDE_STUB_LOG="$log" \
       CLAUDE_STUB_LOG_ENV=1 \
@@ -131,6 +133,60 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t claude-prompt-segment-test.XXXX
   [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"token-123"}}'* ]] || fail "default credentials not loaded: $logged"
   [[ "$logged" == *$'\ncolor=\n'* ]] || fail "render should preserve CLI color default: $logged"
   [[ "$logged" == *$'\nno_color=\n'* || "$logged" == *$'\nno_color=' ]] || fail "render should preserve NO_COLOR default: $logged"
+
+  # macOS: live credentials come from the Keychain, not the stale on-disk file.
+  typeset security_stub="$tmp_dir/security"
+  {
+    print -r -- '#!/usr/bin/env -S zsh -f'
+    print -r -- 'setopt pipe_fail nounset'
+    print -r -- 'print -r -- '\''{"claudeAiOauth":{"accessToken":"keychain-999"}}'\'''
+  } >| "$security_stub"
+  chmod 755 "$security_stub"
+
+  : >| "$log"
+  output="$(
+    HOME="$home" \
+      NO_COLOR= \
+      CLAUDE_PROMPT_SEGMENT_ENABLED=true \
+      CLAUDE_PROMPT_SEGMENT_OS=Darwin \
+      CLAUDE_PROMPT_SEGMENT_SECURITY_BIN="$security_stub" \
+      CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
+      CLAUDE_STUB_LOG="$log" \
+      CLAUDE_STUB_LOG_ENV=1 \
+      "$WRAPPER" --is-enabled 2>&1
+  )"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "--is-enabled on macOS should exit 0" || fail "$output"
+  [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"keychain-999"}}'* ]] \
+    || fail "macOS should load credentials from the Keychain, not the file: $logged"
+
+  # macOS: an empty Keychain lookup falls back to the on-disk file.
+  typeset empty_security_stub="$tmp_dir/security-empty"
+  {
+    print -r -- '#!/usr/bin/env -S zsh -f'
+    print -r -- 'setopt pipe_fail nounset'
+    print -r -- 'exit 44'
+  } >| "$empty_security_stub"
+  chmod 755 "$empty_security_stub"
+
+  : >| "$log"
+  output="$(
+    HOME="$home" \
+      NO_COLOR= \
+      CLAUDE_PROMPT_SEGMENT_ENABLED=true \
+      CLAUDE_PROMPT_SEGMENT_OS=Darwin \
+      CLAUDE_PROMPT_SEGMENT_SECURITY_BIN="$empty_security_stub" \
+      CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$stub" \
+      CLAUDE_STUB_LOG="$log" \
+      CLAUDE_STUB_LOG_ENV=1 \
+      "$WRAPPER" --is-enabled 2>&1
+  )"
+  rc=$?
+  logged="$(command cat -- "$log")"
+  assert_eq 0 "$rc" "--is-enabled on macOS should exit 0 when Keychain is empty" || fail "$output"
+  [[ "$logged" == *'credentials={"claudeAiOauth":{"accessToken":"token-123"}}'* ]] \
+    || fail "macOS should fall back to the file when the Keychain yields nothing: $logged"
 
   output="$(CLAUDE_PROMPT_SEGMENT_CLAUDE_CLI="$tmp_dir/missing" "$WRAPPER" 2>&1)"
   rc=$?

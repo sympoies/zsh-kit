@@ -23,9 +23,35 @@ resolve_claude_cli() {
   command -v claude-cli 2>/dev/null
 }
 
+# Resolve the live credentials JSON for claude-cli.
+#
+# Credential storage is platform-determined by Claude Code: macOS keeps the
+# OAuth tokens in the login Keychain and refreshes the access token there,
+# while Linux/Windows use ~/.claude/.credentials.json as the live store. On
+# macOS the on-disk file is NOT kept in sync and goes stale, so reading it
+# makes the prompt segment render a perpetually expired token. Prefer the
+# platform's live source (Keychain on macOS, file elsewhere) and fall back to
+# the file when the Keychain lookup yields nothing. The OS and `security`
+# binary are overridable so this stays deterministic under test.
 load_default_credentials_json() {
   if [[ -n "${CLAUDE_PROMPT_SEGMENT_ACCESS_TOKEN-}" || -n "${CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON-}" ]]; then
     return 0
+  fi
+
+  local os
+  os="${CLAUDE_PROMPT_SEGMENT_OS:-$(uname -s)}"
+  if [[ "$os" == "Darwin" ]]; then
+    local security_bin="${CLAUDE_PROMPT_SEGMENT_SECURITY_BIN:-security}"
+    local keychain_service="${CLAUDE_PROMPT_SEGMENT_KEYCHAIN_SERVICE:-Claude Code-credentials}"
+    if command -v "$security_bin" >/dev/null 2>&1; then
+      local keychain_json=''
+      keychain_json="$("$security_bin" find-generic-password -s "$keychain_service" -w 2>/dev/null)"
+      if [[ -n "$keychain_json" ]]; then
+        CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON="$keychain_json"
+        export CLAUDE_PROMPT_SEGMENT_CREDENTIALS_JSON
+        return 0
+      fi
+    fi
   fi
 
   local credentials_json="$HOME/.claude/.credentials.json"

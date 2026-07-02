@@ -45,6 +45,10 @@ ZSH_INTERACTIVE_SCRIPT_LAST_LIST=(
 
 ZSH_PRIVATE_SCRIPT_EXCLUDE_LIST=(
   "$ZSH_PRIVATE_SCRIPT_DIR/development.zsh"
+  # Private agent runtime content contains skills, docs, and helper scripts.
+  # It is data/tooling, not zsh startup code.
+  "$ZSH_PRIVATE_SCRIPT_DIR"/agent-runtime/**/*.sh(N)
+  "$ZSH_PRIVATE_SCRIPT_DIR"/agent-runtime/**/*.zsh(N)
 )
 
 # ──────────────────────────────

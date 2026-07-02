@@ -52,6 +52,12 @@ typeset -a _zsh_path_prepend=()
 # re-prepends /opt/homebrew/bin). Doing it here would be a no-op for
 # login shells, so keep the override centralised in `.zshrc`.
 
+# Preserve an active fnm multishell ahead of Homebrew so commands keep using
+# the same Node/npm prefix that launched the shell.
+if [[ -n "${FNM_MULTISHELL_PATH-}" && -d "$FNM_MULTISHELL_PATH/bin" ]]; then
+  _zsh_path_prepend+=("$FNM_MULTISHELL_PATH/bin")
+fi
+
 # Homebrew
 [[ -d /opt/homebrew/bin ]] && _zsh_path_prepend+=(/opt/homebrew/bin /opt/homebrew/sbin)
 [[ -d /home/linuxbrew/.linuxbrew/bin ]] && _zsh_path_prepend+=(/home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin)

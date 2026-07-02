@@ -103,6 +103,47 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
     fail "Linuxbrew bin should precede /usr/local/bin on PATH: $output"
   fi
 
+  typeset fake_fnm="$tmp_home/fnm-multishell"
+  mkdir -p -- "$fake_fnm/bin"
+
+  output="$("$ZSH_BIN" -f -c '
+    unset ZDOTDIR \
+      ZSH_CONFIG_DIR \
+      ZSH_BOOTSTRAP_SCRIPT_DIR \
+      ZSH_SCRIPT_DIR \
+      ZSH_BIN_DIR \
+      ZSH_TOOLS_DIR \
+      ZSH_CACHE_DIR \
+      ZSH_COMPDUMP \
+      HISTFILE \
+      CODEX_AUTH_FILE \
+      CODEX_SECRET_DIR \
+      CODEX_PROMPT_SEGMENT_ENABLED \
+      CLAUDE_PROMPT_SEGMENT_ENABLED
+    HOME="$1"
+    FNM_MULTISHELL_PATH="$2"
+    PATH="$2/bin:/usr/local/bin:/usr/bin"
+    source "$3"
+    typeset fnm_index="$path[(I)$FNM_MULTISHELL_PATH/bin]"
+    typeset linuxbrew_index="$path[(I)$HOME/.linuxbrew/bin]"
+    print -r -- "$fnm_index:$linuxbrew_index"
+    print -r -- "${path[$fnm_index]-}"
+  ' zsh "$tmp_home" "$fake_fnm" "$EXPORTS_SCRIPT" 2>&1)"
+  rc=$?
+  assert_eq 0 "$rc" "sourcing paths.exports with fnm should exit 0" || fail "$output"
+
+  lines=("${(@f)output}")
+  if (( ${#lines[@]} < 2 )); then
+    fail "unexpected fnm output (expected 2 lines): $output"
+  fi
+
+  typeset fnm_index="${lines[1]%%:*}"
+  linuxbrew_index="${lines[1]##*:}"
+  if (( fnm_index <= 0 || linuxbrew_index <= 0 || fnm_index >= linuxbrew_index )); then
+    fail "fnm multishell bin should precede Linuxbrew bin on PATH: $output"
+  fi
+  assert_eq "$fake_fnm/bin" "${lines[2]}" "fnm multishell bin should remain on PATH" || fail "$output"
+
   print -r -- "OK"
 } always {
   rm -rf -- "$tmp_home"

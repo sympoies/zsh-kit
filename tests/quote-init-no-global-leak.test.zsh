@@ -65,4 +65,45 @@ for leak in now last_fetch quote_line quotes_file timestamp_file fetch_interval 
   fi
 done
 
+typeset empty_zdotdir="$tmp_dir/empty-zdotdir"
+mkdir -p -- "$empty_zdotdir" || fail "failed to create empty zdotdir"
+typeset empty_cache="$tmp_dir/empty-cache"
+mkdir -p -- "$empty_cache" || fail "failed to create empty cache dir"
+typeset fake_bin="$tmp_dir/bin"
+mkdir -p -- "$fake_bin" || fail "failed to create fake bin dir"
+print -rl -- '#!/usr/bin/env -S zsh -f' 'print -r -- "[{\"q\":\"Fetched quote.\",\"a\":\"Fetcher\"}]"' >| "$fake_bin/curl" \
+  || fail "failed to write curl stub"
+print -rl -- '#!/usr/bin/env -S zsh -f' \
+  'input="$(cat)"' \
+  'case "$*" in' \
+  '  *.\[0\].q*) print -r -- "Fetched quote." ;;' \
+  '  *.\[0\].a*) print -r -- "Fetcher" ;;' \
+  '  *) print -r -- "$input" ;;' \
+  'esac' >| "$fake_bin/jq" || fail "failed to write jq stub"
+chmod +x "$fake_bin/curl" "$fake_bin/jq" || fail "failed to chmod fetch stubs"
+
+(
+  typeset -x ZDOTDIR="$empty_zdotdir"
+  typeset -x ZSH_CACHE_DIR="$empty_cache"
+  typeset -x ZSH_TOOLS_DIR="$fake_tools"
+  path=("$fake_bin" $path)
+  unset _LOGIN_QUOTE_EXECUTED 2>/dev/null || true
+  source "$QUOTE_SCRIPT" > "$tmp_dir/empty-out.txt" || fail "sourcing quote-init.zsh with empty quotes failed"
+)
+
+typeset empty_out=''
+empty_out="$(<"$tmp_dir/empty-out.txt")"
+[[ "$empty_out" == *'💬 "Stay hungry, stay foolish." — Steve Jobs'* ]] || fail "expected fallback line, got: $empty_out"
+
+typeset -i wait_attempt=0
+while (( wait_attempt < 20 )) && [[ ! -s "$empty_zdotdir/assets/quotes.txt" ]]; do
+  sleep 0.1
+  (( wait_attempt++ ))
+done
+
+[[ -s "$empty_zdotdir/assets/quotes.txt" ]] || fail "expected background fetch to create quotes file"
+[[ "$(<"$empty_zdotdir/assets/quotes.txt")" == *'"Fetched quote." — Fetcher'* ]] \
+  || fail "expected fetched quote in quotes file"
+[[ -s "$empty_cache/quotes.timestamp" ]] || fail "expected successful background fetch to update timestamp"
+
 print -r -- "ok"

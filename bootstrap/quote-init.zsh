@@ -28,6 +28,8 @@ zsh_quote::login_banner() {
   typeset timestamp_file="$ZSH_CACHE_DIR/quotes.timestamp"
   typeset -i fetch_interval=3600  # seconds (1 hour)
 
+  mkdir -p -- "${quotes_file:h}" "$ZSH_CACHE_DIR" 2>/dev/null || true
+
   typeset -i now=0 last_fetch=0
   now=$(date +%s)
   [[ -f "$timestamp_file" ]] && last_fetch=$(<"$timestamp_file")
@@ -42,7 +44,7 @@ zsh_quote::login_banner() {
   fi
 
   # Decide whether to fetch a new quote
-  if (( now - last_fetch > fetch_interval )); then
+  if [[ ! -s "$quotes_file" ]] || (( now - last_fetch > fetch_interval )); then
     (
       nohup bash -c '
         quote_json=$(curl -s --max-time 2 "https://zenquotes.io/api/random")
@@ -50,10 +52,11 @@ zsh_quote::login_banner() {
         author=$(printf "%s" "$quote_json" | jq -r ".[0].a" 2>/dev/null)
 
         if [[ -n "$quote" && "$quote" != "null" && -n "$author" && "$author" != "null" ]]; then
-          printf "\"%s\" — %s\n" "$quote" "$author" >> "'"$quotes_file"'"
-          tail -n 100 "'"$quotes_file"'" > "'"$quotes_file"'.tmp" && \
-            mv "'"$quotes_file"'.tmp" "'"$quotes_file"'"
-          date +%s > "'"$timestamp_file"'"
+          if printf "\"%s\" — %s\n" "$quote" "$author" >> "'"$quotes_file"'"; then
+            tail -n 100 "'"$quotes_file"'" > "'"$quotes_file"'.tmp" && \
+              mv "'"$quotes_file"'.tmp" "'"$quotes_file"'" && \
+              date +%s > "'"$timestamp_file"'"
+          fi
         fi
       ' &> /dev/null &
     ) >/dev/null 2>&1

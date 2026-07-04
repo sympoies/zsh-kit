@@ -80,3 +80,31 @@ path=(
 )
 
 unset _zsh_path_prepend
+
+# ──────────────────────────────
+# FPATH
+# ──────────────────────────────
+# Keep Homebrew-installed completions visible in non-login interactive shells
+# before scripts/interactive/completion.zsh runs compinit. Derive prefixes from
+# the resolved PATH order so completion lookup matches command lookup when more
+# than one Homebrew prefix exists.
+typeset -U fpath=($fpath)
+typeset -a _zsh_fpath_prepend=()
+typeset _zsh_path_entry='' _zsh_brew_prefix='' _zsh_brew_fpath=''
+
+for _zsh_path_entry in "${path[@]}"; do
+  [[ -x "$_zsh_path_entry/brew" ]] || continue
+  _zsh_brew_prefix="${_zsh_path_entry:h}"
+  _zsh_brew_fpath="$_zsh_brew_prefix/share/zsh/site-functions"
+  [[ -d "$_zsh_brew_fpath" ]] || continue
+  _zsh_fpath_prepend+=("$_zsh_brew_fpath")
+done
+
+if (( ${#_zsh_fpath_prepend[@]} > 0 )); then
+  fpath=(
+    $_zsh_fpath_prepend
+    $fpath
+  )
+fi
+
+unset _zsh_fpath_prepend _zsh_path_entry _zsh_brew_prefix _zsh_brew_fpath

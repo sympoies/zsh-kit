@@ -80,6 +80,9 @@ What it does:
   - GNU “gnubin” shims (e.g. `coreutils` for `shuf`) when present
   - first-party wrappers (`$ZDOTDIR/bin`)
   - user bins (`$HOME/bin`, `$HOME/.local/bin`)
+- sets a minimal, deduplicated `fpath` for Homebrew `share/zsh/site-functions`
+  when the matching Homebrew prefix exists, so non-login interactive shells can
+  load Homebrew-installed completions before `compinit`
 
 What does **not** belong here:
 
@@ -108,8 +111,8 @@ Why this is login-only:
 - it’s slightly heavier than just adding `/opt/homebrew/bin` to `PATH`
 - many tools don’t need the full Homebrew environment in non-login shells
 
-This repo still ensures `brew` is discoverable in non-login shells via
-`scripts/_internal/paths.exports.zsh`.
+This repo still ensures `brew` and Homebrew-installed completion directories are
+discoverable in non-login shells via `scripts/_internal/paths.exports.zsh`.
 
 ---
 
@@ -166,10 +169,11 @@ Non-interactive shells should still see the exported paths and core tools:
 env -i HOME="$HOME" zsh -c 'print -r -- "$ZDOTDIR"; print -r -- "$ZSH_CACHE_DIR"; print -r -- "$HISTFILE"; command -v brew; command -v shuf'
 ```
 
-Interactive non-login shells (common in GUI apps like VS Code) should still find Homebrew tools:
+Interactive non-login shells (common in GUI apps like VS Code) should still find Homebrew tools
+and completion directories:
 
 ```bash
-env -i HOME="$HOME" ZSH_BOOT_WEATHER_ENABLED=false ZSH_BOOT_QUOTE_ENABLED=false zsh -i -c 'print -r -- "$HISTFILE"; command -v brew; command -v shuf; exit'
+env -i HOME="$HOME" ZSH_BOOT_WEATHER_ENABLED=false ZSH_BOOT_QUOTE_ENABLED=false zsh -i -c 'print -r -- "$HISTFILE"; command -v brew; print -l -- $fpath | grep "/share/zsh/site-functions"; command -v shuf; exit'
 ```
 
 Login + interactive shells should load everything (including `.zprofile`):
@@ -186,8 +190,9 @@ ZSH_BOOT_WEATHER_ENABLED=false ZSH_BOOT_QUOTE_ENABLED=false zsh -il -c 'print -r
   VS Code typically spawns a **non-login interactive** shell. Use `zsh -l`, or configure the terminal to start login shells.
 
 - **“Why is `brew` missing?”**  
-  `brew shellenv` runs only in login shells here. The fallback path is handled in
-  `scripts/_internal/paths.exports.zsh` (make sure `/opt/homebrew/bin` exists on your machine).
+  `brew shellenv` runs only in login shells here. The fallback path and Homebrew
+  completion path are handled in `scripts/_internal/paths.exports.zsh` (make sure
+  the expected Homebrew prefix exists on your machine).
 
 - **“Why is history writing to `$ZDOTDIR/.zsh_history`?”**  
   On macOS, `/etc/zshrc` sets `HISTFILE=${ZDOTDIR:-$HOME}/.zsh_history` for interactive shells.

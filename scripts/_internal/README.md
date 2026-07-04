@@ -18,6 +18,8 @@ Purpose:
 
 - Define core `ZSH_*` path variables (`ZSH_CONFIG_DIR`, `ZSH_SCRIPT_DIR`, `ZSH_CACHE_DIR`, etc.)
   in one place.
+- Keep Homebrew binary paths and Homebrew `share/zsh/site-functions` available early enough for
+  non-login interactive shell completion bootstrap.
 - `paths.exports.zsh` is intended to be sourced **very early** (now via `$ZDOTDIR/.zshenv`).
 - `paths.init.zsh` is intended to be sourced by interactive/login entrypoints (e.g. `.zshrc`, `.zprofile`).
 

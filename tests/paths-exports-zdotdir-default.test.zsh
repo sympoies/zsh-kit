@@ -41,10 +41,17 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
   typeset expected_histfile="$expected_cache_dir/.zsh_history"
   typeset expected_bin_dir="$expected_zdotdir/bin"
   typeset expected_linuxbrew_bin="$tmp_home/.linuxbrew/bin"
+  typeset expected_linuxbrew_fpath="$tmp_home/.linuxbrew/share/zsh/site-functions"
+  typeset expected_otherbrew_fpath="$tmp_home/otherbrew/share/zsh/site-functions"
   typeset expected_auth_file="$tmp_home/.codex/auth.json"
   typeset expected_secret_dir="$tmp_home/.config/codex_secrets"
 
-  mkdir -p -- "$tmp_home/.linuxbrew/bin" "$tmp_home/.linuxbrew/sbin"
+  mkdir -p -- "$tmp_home/.linuxbrew/bin" "$tmp_home/.linuxbrew/sbin" "$expected_linuxbrew_fpath"
+  : > "$tmp_home/.linuxbrew/bin/brew"
+  chmod +x -- "$tmp_home/.linuxbrew/bin/brew"
+  mkdir -p -- "$tmp_home/otherbrew/bin" "$expected_otherbrew_fpath"
+  : > "$tmp_home/otherbrew/bin/brew"
+  chmod +x -- "$tmp_home/otherbrew/bin/brew"
 
   typeset output='' rc=0
   output="$("$ZSH_BIN" -f -c '
@@ -62,6 +69,7 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
       CODEX_PROMPT_SEGMENT_ENABLED \
       CLAUDE_PROMPT_SEGMENT_ENABLED
     HOME="$1"
+    PATH="$1/otherbrew/bin:/usr/local/bin:/usr/bin"
     source "$2"
     print -r -- "$ZDOTDIR"
     print -r -- "$ZSH_BIN_DIR"
@@ -76,14 +84,18 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
     typeset linuxbrew_index="$path[(I)$HOME/.linuxbrew/bin]"
     typeset usr_local_index="$path[(I)/usr/local/bin]"
     print -r -- "${path[$linuxbrew_index]-}"
+    typeset linuxbrew_fpath_index="$fpath[(I)$HOME/.linuxbrew/share/zsh/site-functions]"
+    print -r -- "${fpath[$linuxbrew_fpath_index]-}"
+    typeset otherbrew_fpath_index="$fpath[(I)$HOME/otherbrew/share/zsh/site-functions]"
+    print -r -- "$linuxbrew_fpath_index:$otherbrew_fpath_index"
     print -r -- "$linuxbrew_index:$usr_local_index"
   ' zsh "$tmp_home" "$EXPORTS_SCRIPT" 2>&1)"
   rc=$?
   assert_eq 0 "$rc" "sourcing paths.exports should exit 0" || fail "$output"
 
   typeset -a lines=("${(@f)output}")
-  if (( ${#lines[@]} < 11 )); then
-    fail "unexpected output (expected 11 lines): $output"
+  if (( ${#lines[@]} < 13 )); then
+    fail "unexpected output (expected 13 lines): $output"
   fi
 
   assert_eq "$expected_zdotdir" "${lines[1]}" "ZDOTDIR should default to HOME/.config/zsh" || fail "$output"
@@ -96,9 +108,16 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
   assert_eq false "${lines[8]}" "Claude prompt segment should default to opt-in" || fail "$output"
   assert_eq "$expected_bin_dir" "${lines[9]}" "ZDOTDIR/bin should be on PATH for repo wrappers" || fail "$output"
   assert_eq "$expected_linuxbrew_bin" "${lines[10]}" "Linuxbrew bin should be on PATH for non-login shells" || fail "$output"
+  assert_eq "$expected_linuxbrew_fpath" "${lines[11]}" "Linuxbrew completions should be on FPATH for non-login shells" || fail "$output"
 
-  typeset linuxbrew_index="${lines[11]%%:*}"
-  typeset usr_local_index="${lines[11]##*:}"
+  typeset linuxbrew_fpath_index="${lines[12]%%:*}"
+  typeset otherbrew_fpath_index="${lines[12]##*:}"
+  if (( linuxbrew_fpath_index <= 0 || otherbrew_fpath_index <= 0 || linuxbrew_fpath_index >= otherbrew_fpath_index )); then
+    fail "Linuxbrew completions should follow PATH precedence in FPATH: $output"
+  fi
+
+  typeset linuxbrew_index="${lines[13]%%:*}"
+  typeset usr_local_index="${lines[13]##*:}"
   if (( linuxbrew_index <= 0 || usr_local_index <= 0 || linuxbrew_index >= usr_local_index )); then
     fail "Linuxbrew bin should precede /usr/local/bin on PATH: $output"
   fi

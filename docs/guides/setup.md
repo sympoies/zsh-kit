@@ -188,7 +188,7 @@ For a private overlay shared between hosts, keep its Git checkout outside this
 repository and link it into the runtime slot:
 
 ```sh
-git clone git@github.com:graysurf/local-scripts.git \
+git clone git@github.com:serenvia/local-scripts.git \
   "$HOME/Project/graysurf/local-scripts"
 ln -s ../../Project/graysurf/local-scripts "$HOME/.config/zsh/.private"
 ```

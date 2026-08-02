@@ -89,7 +89,7 @@ Preview the setup before mutating shell startup files:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --dry-run
@@ -99,7 +99,7 @@ Apply after reviewing the dry-run:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --apply

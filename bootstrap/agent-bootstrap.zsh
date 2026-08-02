@@ -4,7 +4,7 @@ setopt pipe_fail err_exit nounset
 
 typeset -gr SCRIPT_PATH="${0:A}"
 typeset -gr REPO_ROOT="${SCRIPT_PATH:h:h}"
-typeset -gr DEFAULT_REPO_URL="https://github.com/graysurf/zsh-kit.git"
+typeset -gr DEFAULT_REPO_URL="https://github.com/sympoies/zsh-kit.git"
 
 # agent_bootstrap::usage
 # Print agent bootstrap usage.

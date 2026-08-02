@@ -24,7 +24,7 @@ Run a dry-run before mutating shell startup files:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --dry-run
@@ -34,7 +34,7 @@ Apply the setup after reviewing the dry-run:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --apply
@@ -44,7 +44,7 @@ Forward optional feature flags with `--features`:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --features docker,opencode \
@@ -72,7 +72,7 @@ file:
 
 ```bash
 zsh-kit setup \
-  --repo https://github.com/graysurf/zsh-kit.git \
+  --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
   --apply \
@@ -108,7 +108,7 @@ After reviewing the plan, apply the same setup:
 agent-run exec --cwd "$HOME/.config/zsh" -- ./.agents/scripts/bootstrap.sh --apply
 ```
 
-Pass `--repo https://github.com/graysurf/zsh-kit.git` when the checked-out
+Pass `--repo https://github.com/sympoies/zsh-kit.git` when the checked-out
 repository's `origin` is SSH but the target machine should install over HTTPS.
 The bootstrap dispatcher defaults to `--write-zshenv`, `--install-tools skip`,
 and a post-setup smoke check when the destination hook exists.

@@ -125,7 +125,7 @@ main() {
   local version_arg=""
   local version=""
   local repo_root=""
-  local repo_slug="graysurf/zsh-kit"
+  local repo_slug="sympoies/zsh-kit"
   local branch=""
   local target="main"
   local notes_dir=""

@@ -118,6 +118,7 @@ EOF
       PATH="$tmp_dir/bin:/usr/bin:/bin" \
         _ZSH_INTERNAL_PATHS_EXPORTS_SOURCED=1 \
         ZDOTDIR="$REPO_ROOT" \
+        ZSH_BOOTSTRAP_SCRIPT_DIR="$REPO_ROOT/bootstrap" \
         ZSH_CONFIG_DIR="$REPO_ROOT/config" \
         ZSH_CACHE_DIR="$tmp_dir/cache" \
         "$ZSH_BIN" -f -- "$ROOT_INSTALLER" --dry-run --quiet --all \

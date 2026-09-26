@@ -3,3 +3,4 @@
 # Linux-only optional tools (installed via Homebrew on Linux).
 # Keep this file empty unless a tool is optional on Linux but not on macOS.
 
+mitmproxy::mitmproxy::Intercept and inspect HTTP(S) traffic

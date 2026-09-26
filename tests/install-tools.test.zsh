@@ -113,6 +113,21 @@ EOF
   assert_contains "$output" "Failed to install tail-tool" "install loop should continue after a child reads stdin" || fail "$output"
   assert_contains "$output" "Failed:    2" "failed count output" || fail "$output"
 
+  if [[ "$OSTYPE" == linux* ]]; then
+    output="$(
+      PATH="$tmp_dir/bin:/usr/bin:/bin" \
+        _ZSH_INTERNAL_PATHS_EXPORTS_SOURCED=1 \
+        ZDOTDIR="$REPO_ROOT" \
+        ZSH_CONFIG_DIR="$REPO_ROOT/config" \
+        ZSH_CACHE_DIR="$tmp_dir/cache" \
+        "$ZSH_BIN" -f -- "$ROOT_INSTALLER" --dry-run --quiet --all \
+        2>&1
+    )"
+    rc=$?
+    assert_eq 0 "$rc" "Linux optional-manifest dry-run should succeed" || fail "$output"
+    assert_contains "$output" "mitmproxy" "Linux optional Homebrew tools should include mitmproxy" || fail "$output"
+  fi
+
   print -r -- "OK"
 } always {
   rm -rf -- "$tmp_dir"

@@ -5,7 +5,3 @@
 
 # IDE / editor
 code::code::VS Code editor (installs `code` / `code-tunnel`; requires Microsoft apt repo)
-
-# API / network debugging (power tools)
-mitmproxy::mitmproxy::Intercept and inspect HTTP(S) traffic
-

@@ -31,10 +31,6 @@ xh::xh::Fast HTTP client (httpie-like, Rust-based)
 lnav::lnav::Log file navigator (filtering/searching/analysis in a TUI)
 
 # Shell / repo navigation
-fzf::fzf::Fuzzy finder (navigate logs/files/commands quickly)
-fd::fd::Friendly find replacement (fast file discovery)
-tree::tree::Show directory structure (great for sharing repo overview)
-delta::git-delta::Better git diff pager (clean diffs to paste to LLM)
 gitui::gitui::TUI for git (inspect/stage changes cleanly)
 
 # Python (default dev/debug)
@@ -53,6 +49,8 @@ sqlcmd::sqlcmd::Microsoft SQL Server CLI (sqlcmd)
 
 # Repo / files / system utilities
 glow::glow::Render markdown on the CLI
+rumdl::rumdl::Markdown linter used by repository checks
+shellcheck::shellcheck::Static analysis for shell scripts
 repomix::repomix::Packs entire repository into a AI-friendly file
 sccache::sccache::Compiler cache for Rust/C/C++ builds
 yazi::yazi::Blazing fast terminal file manager

@@ -237,7 +237,7 @@ if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS
   missing=()
 
   for tools_list_file in "${tools_list_files[@]}"; do
-    while IFS= read -r line; do
+    while IFS= read -r line <&3 || [[ -n "$line" ]]; do
       # Skip blank lines and comments (allow leading whitespace before `#`).
       [[ "$line" =~ '^[[:space:]]*(#|$)' ]] && continue
       _install_tools::parse_tools_list_line "$line"
@@ -248,7 +248,7 @@ if ! zsh_env::is_true "${ZSH_INSTALL_TOOLS_DRY_RUN_ENABLED-}" "ZSH_INSTALL_TOOLS
       if ! _install_tools::is_installed "$tool" "$brew_name"; then
         missing+=("$tool")
       fi
-    done < "$tools_list_file"
+    done 3< "$tools_list_file"
   done
 
   if (( ${#missing[@]} > 0 )); then
@@ -287,7 +287,7 @@ failed=0
 
 typeset -A seen_tools=()
 for tools_list_file in "${tools_list_files[@]}"; do
-  while IFS= read -r line; do
+  while IFS= read -r line <&3 || [[ -n "$line" ]]; do
     # Skip blank lines and comments (allow leading whitespace before `#`).
     [[ "$line" =~ '^[[:space:]]*(#|$)' ]] && continue
 
@@ -313,7 +313,7 @@ for tools_list_file in "${tools_list_files[@]}"; do
     fi
 
     if zsh_env::is_true "${ZSH_INSTALL_TOOLS_QUIET_ENABLED-}" "ZSH_INSTALL_TOOLS_QUIET_ENABLED"; then
-      if brew install "$brew_name" >/dev/null 2>&1; then
+      if brew install "$brew_name" </dev/null >/dev/null 2>&1; then
         printf "✅ %s installed\n" "$tool"
         ((installed++))
       else
@@ -321,7 +321,7 @@ for tools_list_file in "${tools_list_files[@]}"; do
         ((failed++))
       fi
     else
-      if brew install "$brew_name"; then
+      if brew install "$brew_name" </dev/null; then
         printf "✅ %s installed\n" "$tool"
         ((installed++))
       else
@@ -329,7 +329,7 @@ for tools_list_file in "${tools_list_files[@]}"; do
         ((failed++))
       fi
     fi
-  done < "$tools_list_file"
+  done 3< "$tools_list_file"
 done
 
 printf "\n"

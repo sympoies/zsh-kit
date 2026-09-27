@@ -1,6 +1,4 @@
 # tool::brew-name::comment
 #
-# Linux-only optional tools (installed via Homebrew on Linux).
-# Keep this file empty unless a tool is optional on Linux but not on macOS.
-
-mitmproxy::mitmproxy::Intercept and inspect HTTP(S) traffic
+# Linux-only optional Homebrew formulas.
+# Keep this list limited to tools that Linuxbrew can install on Linux.

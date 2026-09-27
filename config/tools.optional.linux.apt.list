@@ -1,7 +1,10 @@
 # tool::apt-name::comment
 #
 # Linux-only optional tools installed via apt (Ubuntu/Debian).
-# Prefer Homebrew whenever possible; use apt only when Linuxbrew is unavailable or broken.
+# Prefer Linuxbrew when it has a Linux-compatible formula; use apt when it does not.
+
+# Network inspection: Linuxbrew resolves this name to a macOS-only cask.
+mitmproxy::mitmproxy::Intercept and inspect HTTP(S) traffic
 
 # IDE / editor
 code::code::VS Code editor (installs `code` / `code-tunnel`; requires Microsoft apt repo)

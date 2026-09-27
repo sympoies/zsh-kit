@@ -126,7 +126,20 @@ EOF
     )"
     rc=$?
     assert_eq 0 "$rc" "Linux optional-manifest dry-run should succeed" || fail "$output"
-    assert_contains "$output" "mitmproxy" "Linux optional Homebrew tools should include mitmproxy" || fail "$output"
+
+    typeset linux_brew_mitmproxy_rows=''
+    typeset linux_apt_mitmproxy_rows=''
+    linux_brew_mitmproxy_rows="$(command awk -F '::' \
+      '{ sub(/^[[:space:]]+/, "", $1); sub(/[[:space:]]+$/, "", $1) } $1 == "mitmproxy" { print }' \
+      "$REPO_ROOT/config/tools.optional.linux.list")"
+    linux_apt_mitmproxy_rows="$(command awk -F '::' \
+      '{ sub(/^[[:space:]]+/, "", $1); sub(/[[:space:]]+$/, "", $1) } $1 == "mitmproxy" && $2 == "mitmproxy" { print }' \
+      "$REPO_ROOT/config/tools.optional.linux.apt.list")"
+    if [[ -n "$linux_brew_mitmproxy_rows" ]]; then
+      fail "Linuxbrew optional manifest must not route mitmproxy to its macOS-only cask"
+    fi
+    assert_contains "$linux_apt_mitmproxy_rows" "mitmproxy::mitmproxy::" \
+      "Linux apt-only optional tools should include mitmproxy" || fail "$linux_apt_mitmproxy_rows"
   fi
 
   print -r -- "OK"

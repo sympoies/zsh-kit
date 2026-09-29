@@ -63,7 +63,7 @@ EOF
         --apply \
         --repo "$REPO_ROOT" \
         --dest "$tmp_dir/dest" \
-        --features docker,opencode \
+        --features docker \
         --install-tools repo \
         --force \
         --format json \

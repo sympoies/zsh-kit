@@ -30,7 +30,6 @@ docs/
 
 ## 🛠 CLI Docs
 
-- [`cli/opencode-cli-helpers.md`](cli/opencode-cli-helpers.md) — Opt-in prompt helpers for OpenCode (feature: `opencode`)
 - [`cli/docker-tools.md`](cli/docker-tools.md) — Docker helper router + aliases (feature: `docker`)
 - [`cli/open-changed-files.md`](cli/open-changed-files.md) — Open changed files in VS Code (`open-changed-files`)
 

@@ -59,14 +59,14 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
     HOME="$tmp_dir/home" \
       ZDOTDIR="$tmp_dir/not-zdotdir" \
       "$ZSH_BIN" -f -- "$HOOK_SCRIPT" \
-        --features 'docker, opencode,docker' \
+        --features 'docker, sample,docker' \
         --install-tools skip \
         --dry-run \
         2>&1
   )"
   rc=$?
   assert_eq 0 "$rc" "dry-run hook should pass" || fail "$output"
-  assert_contains "$output" "features=docker,opencode" "features should normalize and dedupe" || fail "$output"
+  assert_contains "$output" "features=docker,sample" "features should normalize and dedupe" || fail "$output"
   assert_contains "$output" "install-tools skipped" "skip policy should not run installer" || fail "$output"
   [[ ! -e "$tmp_dir/home/.zshenv" ]] || fail "dry-run hook must not create home .zshenv"
 
@@ -161,7 +161,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
           --repo "$REPO_ROOT" \
           --dest "$cli_dest" \
           --write-zshenv \
-          --features docker,opencode \
+          --features docker \
           --install-tools skip \
           --apply \
           --format json \
@@ -179,7 +179,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
           --repo "$REPO_ROOT" \
           --dest "$cli_dest" \
           --write-zshenv \
-          --features docker,opencode \
+          --features docker \
           --install-tools skip \
           --apply \
           --format json \
@@ -204,7 +204,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t zsh-kit-setup-test.XXXXXX)" || 
     rc=$?
     assert_eq 0 "$rc" "managed zshenv shell smoke should pass" || fail "$output"
     assert_contains "$output" "zdot=$cli_dest" "managed zshenv should set ZDOTDIR" || fail "$output"
-    assert_contains "$output" "features=docker,opencode" "managed zshenv should set features" || fail "$output"
+    assert_contains "$output" "features=docker" "managed zshenv should set features" || fail "$output"
   else
     print -r -- "SKIP: zsh-kit CLI not found"
   fi

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Removed
+
+- Retired the OpenCode helper feature and obsolete optional OpenCode/Gemini CLI installation entries.
+
 ## v2.4.0 - 2026-06-06
 
 ### Changed

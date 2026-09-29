@@ -47,7 +47,7 @@ zsh-kit setup \
   --repo https://github.com/sympoies/zsh-kit.git \
   --write-zshenv \
   --install-tools skip \
-  --features docker,opencode \
+  --features docker \
   --apply
 ```
 
@@ -144,12 +144,11 @@ them by setting `ZSH_FEATURES` in your home `~/.zshenv` before sourcing this
 repo:
 
 ```bash
-export ZSH_FEATURES="docker,opencode"
+export ZSH_FEATURES="docker"
 ```
 
 Current features:
 
-- `opencode`: enables `opencode-tools` and `opencode-tools` completion
 - `docker`: enables `docker-tools`, `docker-aliases`, `docker-tools`
   completion, and `docker` completion
 

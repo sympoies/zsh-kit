@@ -6,8 +6,6 @@
 
 # AI agents (terminal)
 codex::codex::OpenAI Codex CLI (terminal coding agent)
-opencode::opencode::AI coding agent (terminal)
-gemini-cli::gemini-cli::Google Gemini CLI (command: `gemini`)
 
 # Terminal workflow
 atuin::atuin::Magical shell history (searchable DB, optional encrypted sync)

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- `Ctrl+Y` hotkey runs `claude-cli diag rate-limits --all` when `claude-cli` is installed.
+
 ### Removed
 
 - Retired the OpenCode helper feature and obsolete optional OpenCode/Gemini CLI installation entries.

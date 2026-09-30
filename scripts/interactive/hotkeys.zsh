@@ -241,3 +241,33 @@ if command -v codex-cli >/dev/null 2>&1; then
   zle -N codex-cli-rate-limits-async-widget
   bindkey '^U' codex-cli-rate-limits-async-widget
 fi
+
+# ────────────────────────────────────────────────────────
+# Claude CLI hotkeys (optional)
+# ────────────────────────────────────────────────────────
+
+# Bind `claude-cli diag rate-limits --all` to Ctrl+Y when claude-cli is installed.
+# (Ctrl+I is not usable: terminals send it as Tab.)
+if command -v claude-cli >/dev/null 2>&1; then
+  # claude-cli-rate-limits-widget
+  # ZLE widget: run `claude-cli diag rate-limits --all` without clobbering the current buffer.
+  claude-cli-rate-limits-widget() {
+    emulate -L zsh
+    setopt localoptions pipe_fail
+
+    local saved_buffer="${BUFFER}"
+    local -i saved_cursor="${CURSOR}"
+    local -i rc=0
+
+    zle -I
+    claude-cli diag rate-limits --all
+    rc=$?
+
+    BUFFER="${saved_buffer}"
+    CURSOR="${saved_cursor}"
+    return $rc
+  }
+
+  zle -N claude-cli-rate-limits-widget
+  bindkey '^Y' claude-cli-rate-limits-widget
+fi

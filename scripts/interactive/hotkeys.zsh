@@ -246,11 +246,11 @@ fi
 # Claude CLI hotkeys (optional)
 # ────────────────────────────────────────────────────────
 
-# Bind `claude-cli diag rate-limits --all` to Ctrl+Y when claude-cli is installed.
+# Bind `claude-cli diag rate-limits --all --async` to Ctrl+Y when claude-cli is installed.
 # (Ctrl+I is not usable: terminals send it as Tab.)
 if command -v claude-cli >/dev/null 2>&1; then
   # claude-cli-rate-limits-widget
-  # ZLE widget: run `claude-cli diag rate-limits --all` without clobbering the current buffer.
+  # ZLE widget: run `claude-cli diag rate-limits --all --async` without clobbering the current buffer.
   claude-cli-rate-limits-widget() {
     emulate -L zsh
     setopt localoptions pipe_fail
@@ -260,7 +260,7 @@ if command -v claude-cli >/dev/null 2>&1; then
     local -i rc=0
 
     zle -I
-    claude-cli diag rate-limits --all
+    claude-cli diag rate-limits --all --async
     rc=$?
 
     BUFFER="${saved_buffer}"

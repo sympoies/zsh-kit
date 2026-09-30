@@ -109,4 +109,4 @@ If `codex-cli` is installed, extra widgets may be available:
 
 If `claude-cli` is installed, extra widgets may be available:
 
-- `Ctrl+Y`: `claude-cli diag rate-limits --all` (query rate limits for every configured profile)
+- `Ctrl+Y`: `claude-cli diag rate-limits --all --async` (query rate limits for every configured profile)

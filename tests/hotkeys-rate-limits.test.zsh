@@ -66,7 +66,7 @@ tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t hotkeys-rate-limits-test.XXXXXX
   assert_eq '"^U" codex-cli-rate-limits-async-widget' "${${(f)output}[2]}" "Ctrl+U binding" || fail "$output"
   assert_eq 'tab-unchanged' "${${(f)output}[3]}" "Ctrl+I (Tab) binding" || fail "$output"
   assert_eq 'buffer=pending command cursor=7' "${${(f)output}[4]}" "buffer restored after widget" || fail "$output"
-  assert_eq 'claude-cli diag rate-limits --all' "$logged" "Claude widget argv" || fail "$logged"
+  assert_eq 'claude-cli diag rate-limits --all --async' "$logged" "Claude widget argv" || fail "$logged"
 
   print -r -- "OK"
 } always {

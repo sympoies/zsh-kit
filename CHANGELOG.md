@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `Ctrl+Y` hotkey runs `claude-cli diag rate-limits --all` when `claude-cli` is installed.
+- `Ctrl+Y` hotkey runs `claude-cli diag rate-limits --all --async` when `claude-cli` is installed.
 
 ### Removed
 

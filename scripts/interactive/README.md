@@ -104,3 +104,9 @@ Note: `Ctrl+F` overrides the default Emacs-style cursor movement binding.
 If `codex-cli` is installed, extra widgets may be available:
 
 - `Ctrl+U`: `codex-cli diag rate-limits --all --async` (query rate limits for all configured accounts)
+
+### Claude CLI Hotkeys
+
+If `claude-cli` is installed, extra widgets may be available:
+
+- `Ctrl+Y`: `claude-cli diag rate-limits --all` (query rate limits for every configured profile)

@@ -281,8 +281,9 @@ mactop() {
     mactop_bin='/opt/homebrew/bin/mactop'
   elif [[ -x /usr/local/bin/mactop ]]; then
     mactop_bin='/usr/local/bin/mactop'
-  elif command -v mactop >/dev/null 2>&1; then
-    mactop_bin="$(command -v mactop)"
+  elif (( ${+commands[mactop]} )); then
+    # $commands searches PATH only; `command -v` would return this function.
+    mactop_bin="${commands[mactop]}"
   else
     print -u2 -r -- "❌ mactop not found"
     return 127

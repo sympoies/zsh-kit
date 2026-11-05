@@ -158,8 +158,8 @@ tmp_home="$(mktemp -d 2>/dev/null || mktemp -d -t paths-exports-test.XXXXXX)" ||
 
   typeset fnm_index="${lines[1]%%:*}"
   linuxbrew_index="${lines[1]##*:}"
-  if (( fnm_index <= 0 || linuxbrew_index <= 0 || fnm_index >= linuxbrew_index )); then
-    fail "fnm multishell bin should precede Linuxbrew bin on PATH: $output"
+  if (( fnm_index <= 0 || linuxbrew_index <= 0 || linuxbrew_index >= fnm_index )); then
+    fail "missing Linuxbrew bin should precede the inherited fnm bin on PATH: $output"
   fi
   assert_eq "$fake_fnm/bin" "${lines[2]}" "fnm multishell bin should remain on PATH" || fail "$output"
 

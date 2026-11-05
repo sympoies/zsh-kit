@@ -74,12 +74,14 @@ _zsh_path_prepend+=(
   $HOME/.local/bin
 )
 
-path=(
-  $_zsh_path_prepend
-  $path
-)
+typeset -a _zsh_path_missing=()
+typeset _zsh_path_candidate
+for _zsh_path_candidate in "${_zsh_path_prepend[@]}"; do
+  (( ${path[(Ie)$_zsh_path_candidate]} )) || _zsh_path_missing+=("$_zsh_path_candidate")
+done
+path=("${_zsh_path_missing[@]}" "${path[@]}")
 
-unset _zsh_path_prepend
+unset _zsh_path_prepend _zsh_path_missing _zsh_path_candidate
 
 # ──────────────────────────────
 # FPATH

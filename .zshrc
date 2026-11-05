@@ -25,10 +25,9 @@ fi
 # environment and ordinary shell commands agree. Homebrew login setup now
 # preserves the PATH order already established by earlier startup layers.
 # The local dev install (`scripts/install-local-release-binaries.sh` →
-# ~/.local/nils-cli/bin) wins over the brew formula when populated. After
-# `brew upgrade nils-cli` the bump skill clears that dir, so brew wins again.
-# `typeset -U path` (set in paths.exports.zsh) dedups the earlier instance.
-if [[ -d "$HOME/.local/nils-cli/bin" ]]; then
+# ~/.local/nils-cli/bin) is prepended when populated and not already present.
+# Preserve the position of an already inherited local install.
+if [[ -d "$HOME/.local/nils-cli/bin" ]] && (( ! ${path[(Ie)$HOME/.local/nils-cli/bin]} )); then
   path=("$HOME/.local/nils-cli/bin" $path)
 fi
 

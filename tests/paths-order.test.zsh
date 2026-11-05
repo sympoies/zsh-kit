@@ -13,10 +13,10 @@ tmp="$(mktemp -d)" || exit 1
 
   # Obtain the complete candidate set on this system, then place every entry
   # after the caller's chosen entry for an actual interactive startup.
-  typeset candidates
+  typeset candidates=''
   candidates="$(env -i HOME="$home" ZDOTDIR="$zdot" FNM_MULTISHELL_PATH="$home/fnm" PATH=/usr/bin "$zsh_bin" -c 'print -r -- $PATH')" || exit 1
   typeset inherited="/selected/bin:$home/.local/nils-cli/bin:$candidates"
-  typeset actual
+  typeset actual=''
   actual="$(env -i HOME="$home" ZDOTDIR="$zdot" FNM_MULTISHELL_PATH="$home/fnm" PATH="$inherited" "$zsh_bin" -i -c '
     [[ "$PATH" == "$1" ]] || { print -u2 -r -- "startup reordered inherited PATH: $PATH"; exit 1; }
     unset _ZSH_INTERNAL_PATHS_EXPORTS_SOURCED

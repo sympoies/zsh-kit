@@ -75,7 +75,7 @@ _zsh_path_prepend+=(
 )
 
 typeset -a _zsh_path_missing=()
-typeset _zsh_path_candidate
+typeset _zsh_path_candidate=''
 for _zsh_path_candidate in "${_zsh_path_prepend[@]}"; do
   (( ${path[(Ie)$_zsh_path_candidate]} )) || _zsh_path_missing+=("$_zsh_path_candidate")
 done
